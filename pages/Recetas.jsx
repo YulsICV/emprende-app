@@ -51,44 +51,70 @@ function Recetas({ db, actualizarDb }) {
     const precioMayoreo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMay / 100)) : 0
     const precioMenudeo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMen / 100)) : 0
 
+    const guardarReceta = () => {
+        if (!form.nombre || !form.unidades || form.ingredientes.length === 0) return
+
+        const nuevaReceta = {
+            ...form,
+            id: Date.now(),
+            costoTotal,
+            costoPorUnidad,
+            precioMayoreo,
+            precioMenudeo,
+            fecha: new Date().toISOString()
+        }
+
+        actualizarDb("recetas", [...db.recetas, nuevaReceta])
+
+        setForm({
+            nombre: "",
+            categoria: "Clásica",
+            unidades: "",
+            ingredientes: [],
+            margenMay: 35,
+            margenMen: 70
+        })
+    }
+
     return (
         <div>
             <h2>Recetas & Costos</h2>
-            <form>
-                <div>
-                    <label>Nombre de la receta</label>
-                    <input
-                        type="text"
-                        value={form.nombre}
-                        onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                        placeholder="Ej: Minidonas San Valentín"
-                    />
-                </div>
-                <div>
-                    <label>Categoría</label>
-                    <select
-                        value={form.categoria}
-                        onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                    >
-                        <option>Sencilla</option>
-                        <option>Clásica</option>
-                        <option>Especial</option>
-                        <option>Premium</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Unidades producidas</label>
-                    <input
-                        type="number"
-                        value={form.unidades}
-                        onChange={(e) => setForm({ ...form, unidades: e.target.value })}
-                        placeholder="Ej: 45"
-                    />
-                </div>
-            </form>
 
             <div>
-                <h3>Ingredientes</h3>
+                <label>Nombre de la receta</label>
+                <input
+                    type="text"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    placeholder="Ej: Minidonas San Valentín"
+                />
+            </div>
+
+            <div>
+                <label>Categoría</label>
+                <select
+                    value={form.categoria}
+                    onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                >
+                    <option>Sencilla</option>
+                    <option>Clásica</option>
+                    <option>Especial</option>
+                    <option>Premium</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Unidades producidas</label>
+                <input
+                    type="number"
+                    value={form.unidades}
+                    onChange={(e) => setForm({ ...form, unidades: e.target.value })}
+                    placeholder="Ej: 45"
+                />
+            </div>
+
+            <h3>Ingredientes</h3>
+            <div>
                 <input
                     type="text"
                     value={ingForm.nombre}
@@ -107,7 +133,6 @@ function Recetas({ db, actualizarDb }) {
                 >
                     {UNIDADES_USO.map(u => <option key={u}>{u}</option>)}
                 </select>
-
                 <input
                     type="number"
                     value={ingForm.cantidadPaquete}
@@ -120,7 +145,6 @@ function Recetas({ db, actualizarDb }) {
                 >
                     {UNIDADES_PAQUETE.map(u => <option key={u}>{u}</option>)}
                 </select>
-
                 <input
                     type="number"
                     value={ingForm.precioPaquete}
@@ -167,6 +191,31 @@ function Recetas({ db, actualizarDb }) {
                     <p>Costo por unidad: ₡{costoPorUnidad.toFixed(0)}</p>
                     <p>Precio mayoreo sugerido: ₡{precioMayoreo}</p>
                     <p>Precio menudeo sugerido: ₡{precioMenudeo}</p>
+                </div>
+            )}
+
+            <button type="button" onClick={guardarReceta}>
+                💾 Guardar receta
+            </button>
+            {db.recetas.length > 0 && (
+                <div>
+                    <h3>Recetas guardadas</h3>
+                    {db.recetas.map((receta) => (
+                        <div key={receta.id}>
+                            <h4>{receta.nombre}</h4>
+                            <p>Categoría: {receta.categoria}</p>
+                            <p>Unidades: {receta.unidades}</p>
+                            <p>Costo por unidad: ₡{parseFloat(receta.costoPorUnidad).toFixed(0)}</p>
+                            <p>Precio mayoreo: ₡{receta.precioMayoreo}</p>
+                            <p>Precio menudeo: ₡{receta.precioMenudeo}</p>
+                            <button
+                                type="button"
+                                onClick={() => actualizarDb("recetas", db.recetas.filter(r => r.id !== receta.id))}
+                            >
+                                🗑 Eliminar
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
