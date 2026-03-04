@@ -23,7 +23,7 @@ function App() {
       <h1>Emprende App</h1>
       <Navbar activo={activo} setActivo={setActivo} />
 
-      {activo === "Recetas" && <Recetas />}
+      {activo === "Recetas" && <Recetas db={db} actualizarDb={actualizarDb} />}
       {activo === "Inventario" && <Inventario />}
       {activo === "Ventas" && <Ventas />}
       {activo === "Clientes" && <Clientes />}
