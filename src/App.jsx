@@ -24,10 +24,10 @@ function App() {
       <Navbar activo={activo} setActivo={setActivo} />
 
       {activo === "Recetas" && <Recetas db={db} actualizarDb={actualizarDb} />}
-      {activo === "Inventario" && <Inventario />}
-      {activo === "Ventas" && <Ventas />}
-      {activo === "Clientes" && <Clientes />}
-      {activo === "Reportes" && <Reportes />}
+      {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
+      {activo === "Ventas" && <Ventas db={db} actualizarDb={actualizarDb} />}
+      {activo === "Clientes" && <Clientes db={db} actualizarDb={actualizarDb} />}
+      {activo === "Reportes" && <Reportes db={db} />}
     </div>
   )
 
