@@ -11,21 +11,28 @@ export default function Pedidos({ db, actualizarDb }) {
         anticipo: "",
         estado: "pendiente",
         tematica: "",
+        costoTematica: "",
         colores: "",
         envio: "",
         especificaciones: "",
+        cargoCambio: "",
+        motivoCambio: "",
         camposExtra: {
             tematica: false,
             colores: false,
             envio: false,
-            especificaciones: false
+            especificaciones: false,
+            cambioUltimaMomento: false
         }
     })
 
     const recetaSeleccionada = db.recetas.find(r => r.id === form.recetaId)
     const nombreCliente = form.cliente || form.clienteNuevo
     const total = recetaSeleccionada
-        ? recetaSeleccionada.precioMenudeo * (parseInt(form.cantidad) || 0) + parseFloat(form.envio || 0)
+        ? recetaSeleccionada.precioMenudeo * (parseInt(form.cantidad) || 0)
+            + parseFloat(form.envio || 0)
+            + parseFloat(form.costoTematica || 0)
+            + parseFloat(form.cargoCambio || 0)
         : 0
     const saldoPendiente = total - parseFloat(form.anticipo || 0)
 
@@ -46,9 +53,9 @@ export default function Pedidos({ db, actualizarDb }) {
         actualizarDb("pedidos", [...db.pedidos, nuevoPedido])
         setForm({
             cliente: "", clienteNuevo: "", telefonoNuevo: "", recetaId: "", cantidad: "",
-            fechaEntrega: "", anticipo: "", estado: "pendiente", tematica: "", colores: "",
-            envio: "", especificaciones: "",
-            camposExtra: { tematica: false, colores: false, envio: false, especificaciones: false }
+            fechaEntrega: "", anticipo: "", estado: "pendiente", tematica: "", costoTematica: "",
+            colores: "", envio: "", especificaciones: "", cargoCambio: "", motivoCambio: "",
+            camposExtra: { tematica: false, colores: false, envio: false, especificaciones: false, cambioUltimaMomento: false }
         })
     }
 
@@ -142,7 +149,7 @@ export default function Pedidos({ db, actualizarDb }) {
 
             <div>
                 <p>¿Campos extra para este pedido?</p>
-                {["tematica", "colores", "envio", "especificaciones"].map(campo => (
+                {["tematica", "colores", "envio", "especificaciones", "cambioUltimaMomento"].map(campo => (
                     <label key={campo}>
                         <input
                             type="checkbox"
@@ -152,7 +159,7 @@ export default function Pedidos({ db, actualizarDb }) {
                                 camposExtra: { ...form.camposExtra, [campo]: e.target.checked }
                             })}
                         />
-                        {campo.charAt(0).toUpperCase() + campo.slice(1)}
+                        {campo === "cambioUltimaMomento" ? "Cambio último momento" : campo.charAt(0).toUpperCase() + campo.slice(1)}
                     </label>
                 ))}
             </div>
@@ -165,6 +172,13 @@ export default function Pedidos({ db, actualizarDb }) {
                         value={form.tematica}
                         onChange={(e) => setForm({ ...form, tematica: e.target.value })}
                         placeholder="Ej: Frozen, San Valentín..."
+                    />
+                    <label>Costo extra por temática (₡)</label>
+                    <input
+                        type="number"
+                        value={form.costoTematica}
+                        onChange={(e) => setForm({ ...form, costoTematica: e.target.value })}
+                        placeholder="0"
                     />
                 </div>
             )}
@@ -205,6 +219,25 @@ export default function Pedidos({ db, actualizarDb }) {
                 </div>
             )}
 
+            {form.camposExtra.cambioUltimaMomento && (
+                <div>
+                    <label>Cargo por cambio (₡)</label>
+                    <input
+                        type="number"
+                        value={form.cargoCambio}
+                        onChange={(e) => setForm({ ...form, cargoCambio: e.target.value })}
+                        placeholder="0"
+                    />
+                    <label>Motivo del cambio</label>
+                    <input
+                        type="text"
+                        value={form.motivoCambio}
+                        onChange={(e) => setForm({ ...form, motivoCambio: e.target.value })}
+                        placeholder="Ej: cambió colores, agregó más unidades..."
+                    />
+                </div>
+            )}
+
             {recetaSeleccionada && form.cantidad > 0 && (
                 <div>
                     <p>Total: ₡{total.toFixed(0)}</p>
@@ -230,9 +263,10 @@ export default function Pedidos({ db, actualizarDb }) {
                                         <p>🍩 {p.recetaNombre} · {p.cantidad} unidades</p>
                                         <p>📅 Entrega: {new Date(p.fechaEntrega).toLocaleDateString("es-CR")}</p>
                                         <p>💰 Total: ₡{p.total.toFixed(0)} · Saldo: ₡{p.saldoPendiente.toFixed(0)}</p>
-                                        {p.tematica && <p>🎨 Temática: {p.tematica}</p>}
+                                        {p.tematica && <p>🎨 Temática: {p.tematica} {p.costoTematica ? `· ₡${p.costoTematica}` : ""}</p>}
                                         {p.colores && <p>🎨 Colores: {p.colores}</p>}
                                         {p.especificaciones && <p>📝 {p.especificaciones}</p>}
+                                        {p.motivoCambio && <p>⚠️ Cambio: {p.motivoCambio} {p.cargoCambio ? `· ₡${p.cargoCambio}` : ""}</p>}
                                         <select
                                             value={p.estado}
                                             onChange={(e) => cambiarEstado(p.id, e.target.value)}
