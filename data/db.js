@@ -9,7 +9,8 @@ export const cargarDatos = () => {
         recetas: [],
         ventas: [],
         clientes: [],
-        inventario: []
+        inventario: [],
+        pedidos: []
     }
 }
 
