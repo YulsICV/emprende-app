@@ -1,0 +1,57 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: var(--blanco);
+  border-bottom: 2px solid var(--verde);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.app-header h1 {
+  font-size: 22px;
+  color: var(--verde-oscuro);
+  letter-spacing: 0.5px;
+}
+.app-contenido {
+  flex: 1;
+  padding: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.navbar {
+  background: var(--blanco);
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--gris-borde);
+  overflow-x: auto;
+}
+
+.navbar button {
+  background: none;
+  color: var(--texto-suave);
+  padding: 14px 18px;
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.navbar button:hover {
+  color: var(--verde);
+}
+
+.navbar button.activo {
+  color: var(--verde-oscuro);
+  border-bottom: 3px solid var(--verde);
+  font-weight: 600;
+}

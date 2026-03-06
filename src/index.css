@@ -1,0 +1,89 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --verde: #2ec4a9;
+  --verde-oscuro: #1a9e87;
+  --verde-claro: #e8f8f5;
+  --gris: #f5f7fa;
+  --gris-borde: #e0e6ed;
+  --texto: #2d3748;
+  --texto-suave: #718096;
+  --blanco: #ffffff;
+  --rojo: #e53e3e;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--gris);
+  color: var(--texto);
+  font-size: 15px;
+}
+
+h1, h2, h3, h4 {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--texto);
+  background: var(--blanco);
+  outline: none;
+  transition: border 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--verde);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texto-suave);
+  display: block;
+  margin-bottom: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--blanco);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: var(--verde-claro);
+  color: var(--verde-oscuro);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 13px;
+}
+
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gris-borde);
+  font-size: 14px;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}

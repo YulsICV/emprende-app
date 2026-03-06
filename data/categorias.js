@@ -9,7 +9,7 @@ export const UNIDADES = [
   "g",
   "kg",
   "ml",
-  "L",
+  "l",
   "taza",
   "cdta",
   "cda",
