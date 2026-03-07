@@ -36,7 +36,7 @@ export default function App() {
         {activo === "Pedidos" && <Pedidos db={db} actualizarDb={actualizarDb} />}
         {activo === "Ventas" && <Ventas db={db} actualizarDb={actualizarDb} />}
         {activo === "Clientes" && <Clientes db={db} actualizarDb={actualizarDb} />}
-        {activo === "Reportes" && <Reportes db={db} />}
+        {activo === "Reportes" && <Reportes db={db} actualizarDb={actualizarDb} />}
       </main>
     </div>
   )
