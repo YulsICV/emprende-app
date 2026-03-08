@@ -7,6 +7,7 @@ import Pedidos from "../pages/Pedidos"
 import Ventas from "../pages/Ventas"
 import Clientes from "../pages/Clientes"
 import Reportes from "../pages/Reportes"
+import Produccion from "../pages/Produccion"
 import "./App.css"
 import "./styles/components.css"
 
@@ -32,6 +33,7 @@ export default function App() {
       <Navbar activo={activo} setActivo={setActivo} />
       <main className="app-contenido">
         {activo === "Recetas" && <Recetas db={db} actualizarDb={actualizarDb} />}
+        {activo === "Produccion" && <Produccion db={db} actualizarDb={actualizarDb} />}
         {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
         {activo === "Pedidos" && <Pedidos db={db} actualizarDb={actualizarDb} />}
         {activo === "Ventas" && <Ventas db={db} actualizarDb={actualizarDb} />}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 
 const FORM_INICIAL = {
     fechaEntrega: "",
@@ -55,14 +55,7 @@ export default function Pedidos({ db, actualizarDb }) {
     const total = calcularTotal(form, recetaSeleccionada)
     const saldoPendiente = total - parseFloat(form.anticipo || 0)
 
-    const ultimaRecetaId = useRef(null)
-    useEffect(() => {
-        if (form.recetaId === ultimaRecetaId.current) return
-        ultimaRecetaId.current = form.recetaId
-        if (recetaSeleccionada?.envioGratis) {
-            setForm(f => ({ ...f, tipoEnvio: "gratis", envio: "" }))
-        }
-    }, [form.recetaId, recetaSeleccionada?.envioGratis])
+
 
     const verificarClienteExistente = (nombre) => {
         const existe = db.clientes?.find(c =>
@@ -282,28 +275,28 @@ export default function Pedidos({ db, actualizarDb }) {
                     </div>
                     {!esNuevoCliente ? (
                         <>
-                            <select value={form.cliente}
-                                onChange={e => setForm({ ...form, cliente: e.target.value })}>
-                                <option value="">— Seleccionar cliente —</option>
-                                {(db.clientes || []).map(c => (
-                                    <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                                ))}
-                            </select>
-                            {(() => {
-                                const cli = (db.clientes || []).find(c => c.nombre === form.cliente)
-                                if (!cli?.alergias) return null
-                                return (
-                                    <div style={{
-                                        marginTop: 8, padding: "8px 12px",
-                                        background: "#fef3c7", border: "1.5px solid #f59e0b",
-                                        borderRadius: 8, fontSize: 13
-                                    }}>
-                                        <strong>⚠️ Alergias:</strong>{" "}
-                                        {cli.alergias ? "Tiene alergias registradas" : ""}{" "}
-                                        {cli.notasAlergias ? `— ${cli.notasAlergias}` : ""}
-                                    </div>
-                                )
-                            })()}
+                        <select value={form.cliente}
+                            onChange={e => setForm({ ...form, cliente: e.target.value })}>
+                            <option value="">— Seleccionar cliente —</option>
+                            {(db.clientes || []).map(c => (
+                                <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                            ))}
+                        </select>
+                        {(() => {
+                            const cli = (db.clientes || []).find(c => c.nombre === form.cliente)
+                            if (!cli?.alergias) return null
+                            return (
+                                <div style={{
+                                    marginTop: 8, padding: "8px 12px",
+                                    background: "#fef3c7", border: "1.5px solid #f59e0b",
+                                    borderRadius: 8, fontSize: 13
+                                }}>
+                                    <strong>⚠️ Alergias:</strong>{" "}
+                                    {cli.alergias ? "Tiene alergias registradas" : ""}{" "}
+                                    {cli.notasAlergias ? `— ${cli.notasAlergias}` : ""}
+                                </div>
+                            )
+                        })()}
                         </>
                     ) : (
                         <>
@@ -342,7 +335,15 @@ export default function Pedidos({ db, actualizarDb }) {
 
                 <div className="form-grupo">
                     <label>Receta *</label>
-                    <select value={form.recetaId} onChange={e => setForm({ ...form, recetaId: e.target.value })}>
+                    <select value={form.recetaId} onChange={e => {
+                        const receta = (db.recetas || []).find(r => r.id === e.target.value)
+                        setForm({
+                            ...form,
+                            recetaId: e.target.value,
+                            tipoEnvio: receta?.envioGratis ? "gratis" : form.tipoEnvio,
+                            envio: receta?.envioGratis ? "" : form.envio
+                        })
+                    }}>
                         <option value="">— Seleccionar receta —</option>
                         {(db.recetas || []).map(r => (
                             <option key={r.id} value={r.id}>{r.nombre} — ₡{r.precioMenudeo?.toLocaleString()}/u</option>

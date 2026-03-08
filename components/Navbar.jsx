@@ -1,4 +1,4 @@
-const MODULOS = ["Recetas", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes"]
+const MODULOS = ["Recetas", "Produccion", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes"]
 
 function Navbar({ activo, setActivo }) {
     return (
