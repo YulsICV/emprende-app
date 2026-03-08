@@ -63,7 +63,7 @@ export default function App() {
       <header className="app-header">
 
         <div className="header-logo">
-          <img src="./assets/logo-transparente.png" style={{ height: 34 }} alt="logo" />
+          <img src="../.." style={{ height: 34 }} alt="logo" />
           <span className="header-titulo">Emprende App</span>
         </div>
 
