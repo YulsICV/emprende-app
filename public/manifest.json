@@ -1,0 +1,21 @@
+{
+  "name": "Emprende App",
+  "short_name": "EmprendeApp",
+  "description": "Gestión para emprendimientos de repostería",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf8f2",
+  "theme_color": "#1a9e87",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

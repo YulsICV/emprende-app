@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { UNIDADES_USO, UNIDADES_PAQUETE } from "../../data/conversiones"
 
-// Campo reutilizable con dropdown de inventario
 function CampoConInventario({ valor, onChange, inventario, placeholder, onSeleccionar }) {
     const [sugerencias, setSugerencias] = useState([])
     const [mostrar, setMostrar] = useState(false)
@@ -80,7 +79,6 @@ function CampoConInventario({ valor, onChange, inventario, placeholder, onSelecc
     )
 }
 
-// Formulario genérico reutilizable para ingredientes e insumos
 function FormularioItem({ titulo, icono, form, setForm, onAgregar, onAgregarAInventario, inventario, tipoUnidad = "ingrediente" }) {
     const esNuevo = form.nombre.length > 2 &&
         !inventario.some(i => i.nombre.toLowerCase() === form.nombre.toLowerCase())
@@ -139,8 +137,6 @@ function FormularioItem({ titulo, icono, form, setForm, onAgregar, onAgregarAInv
                     <label>Unidad de uso</label>
                     <select value={form.unidadUso} onChange={e => setForm({ ...form, unidadUso: e.target.value })}>
                         {UNIDADES_USO.map(u => <option key={u}>{u}</option>)}
-                        <option value="cm">cm</option>
-                        <option value="unidad">unidad</option>
                     </select>
                 </div>
             </div>
@@ -197,8 +193,7 @@ function FormularioItem({ titulo, icono, form, setForm, onAgregar, onAgregarAInv
     )
 }
 
-// Componente principal exportado — mantiene la misma interfaz que antes
-function FormularioIngrediente({ ingForm, setIngForm, onAgregar, inventario = [], onAgregarAInventario,
+export default function FormularioIngrediente({ ingForm, setIngForm, onAgregar, inventario = [], onAgregarAInventario,
     insumoForm, setInsumoForm, onAgregarInsumo }) {
     return (
         <>
@@ -226,4 +221,3 @@ function FormularioIngrediente({ ingForm, setIngForm, onAgregar, inventario = []
     )
 }
 
-export default FormularioIngrediente
