@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
-import { cargarDatos, guardarDatos } from "../data/db"
+import { cargarDatos, guardarDatos } from "./data/db"
 import Navbar from "../components/Navbar"
-import Recetas from "../pages/Recetas"
-import Inventario from "../pages/Inventario"
-import Pedidos from "../pages/Pedidos"
-import Ventas from "../pages/Ventas"
-import Clientes from "../pages/Clientes"
-import Reportes from "../pages/Reportes"
-import Produccion from "../pages/Produccion"
+import Recetas from "./pages/Recetas"
+import Inventario from "./pages/Inventario"
+import Pedidos from "./pages/Pedidos"
+import Ventas from "./pages/Ventas"
+import Clientes from "./pages/Clientes"
+import Reportes from "./pages/Reportes"
+import Produccion from "./pages/Produccion"
 import Recetario from "./pages/Recetario"
 import LoginPage from "./pages/LoginPage"
 import "./App.css"
@@ -63,7 +63,7 @@ export default function App() {
       <header className="app-header">
 
         <div className="header-logo">
-          <img src="../.." style={{ height: 34 }} alt="logo" />
+          <img src="./src/assets/logo-transparente.png" style={{ height: 34 }} alt="logo" />
           <span className="header-titulo">Emprende App</span>
         </div>
 
