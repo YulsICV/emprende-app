@@ -333,8 +333,8 @@ export default function FormularioRecetas({
                 <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", marginBottom: 12, margin: "0 0 12px 0", letterSpacing: 0.5 }}>
                     🍳 CONDICIONES DE PREPARACIÓN
                 </p>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10 }}>
-                    <div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ gridColumn: "1 / -1" }}>
                         <span style={labelStyle}>Equipo</span>
                         <select value={form.equipo || ""}
                             onChange={e => setForm(prev => ({ ...prev, equipo: e.target.value }))}

@@ -32,7 +32,7 @@ export default function App() {
 
   // 📍 Módulo activo persistente
   const [activo, setActivo] = useState(() => {
-    return localStorage.getItem("activo") || "Recetas"
+    return "Recetas"
   })
 
   // 📝 Guardar usuario cuando cambie
@@ -97,3 +97,4 @@ export default function App() {
     </div>
   )
 }
+
