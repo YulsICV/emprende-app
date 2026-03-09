@@ -33,10 +33,20 @@ function TablaItems({ items, titulo, icono }) {
     )
 }
 
-function ListaRecetas({ recetas, onEliminar, onEditar }) {
+export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
     const [abierta, setAbierta] = useState(null)
+    const [confirmarId, setConfirmarId] = useState(null)
 
     if (recetas.length === 0) return null
+
+    const handleEliminar = (id) => {
+        if (confirmarId === id) {
+            onEliminar(id)
+            setConfirmarId(null)
+        } else {
+            setConfirmarId(id)
+        }
+    }
 
     return (
         <div>
@@ -45,6 +55,7 @@ function ListaRecetas({ recetas, onEliminar, onEditar }) {
                 const insumos = receta.insumos || []
                 const costoInsumos = insumos.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
                 const costoIngredientes = receta.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
+                const confirmando = confirmarId === receta.id
 
                 return (
                     <div className="card" key={receta.id}>
@@ -64,7 +75,7 @@ function ListaRecetas({ recetas, onEliminar, onEditar }) {
                                     {insumos.length > 0 && ` · ${insumos.length} insumo${insumos.length !== 1 ? "s" : ""}`}
                                 </p>
                             </div>
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
                                 <button className="btn-secundario" type="button"
                                     onClick={() => setAbierta(abierta === receta.id ? null : receta.id)}>
                                     {abierta === receta.id ? "▲ Ocultar" : "▼ Ver detalle"}
@@ -72,9 +83,35 @@ function ListaRecetas({ recetas, onEliminar, onEditar }) {
                                 <button className="btn-secundario" type="button" onClick={() => onEditar(receta)}>
                                     ✏️ Editar
                                 </button>
-                                <button className="btn-peligro" type="button" onClick={() => onEliminar(receta.id)}>
-                                    🗑
-                                </button>
+
+                                {/* Botón eliminar con confirmación inline */}
+                                {confirmando ? (
+                                    <div style={{
+                                        display: "flex", alignItems: "center", gap: 6,
+                                        background: "#fff5f5", border: "1.5px solid #fecaca",
+                                        borderRadius: 10, padding: "4px 10px",
+                                    }}>
+                                        <span style={{ fontSize: 12, color: "#e53e3e", fontWeight: 600, whiteSpace: "nowrap" }}>
+                                            ¿Eliminar?
+                                        </span>
+                                        <button type="button" onClick={() => handleEliminar(receta.id)} style={{
+                                            all: "unset", cursor: "pointer",
+                                            background: "#e53e3e", color: "#fff",
+                                            fontSize: 12, fontWeight: 700,
+                                            padding: "3px 10px", borderRadius: 7,
+                                        }}>Sí</button>
+                                        <button type="button" onClick={() => setConfirmarId(null)} style={{
+                                            all: "unset", cursor: "pointer",
+                                            background: "#e2e8f0", color: "#2d3748",
+                                            fontSize: 12, fontWeight: 600,
+                                            padding: "3px 10px", borderRadius: 7,
+                                        }}>No</button>
+                                    </div>
+                                ) : (
+                                    <button className="btn-peligro" type="button" onClick={() => handleEliminar(receta.id)}>
+                                        🗑
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -102,19 +139,9 @@ function ListaRecetas({ recetas, onEliminar, onEditar }) {
                         {abierta === receta.id && (
                             <div style={{ marginTop: 16, borderTop: "1px solid var(--borde)", paddingTop: 16 }}>
                                 <div style={{ overflowX: "auto" }}>
-                                    <TablaItems
-                                        items={receta.ingredientes}
-                                        titulo="Ingredientes"
-                                        icono="🧁"
-                                    />
-                                    <TablaItems
-                                        items={insumos}
-                                        titulo="Insumos de empaque"
-                                        icono="📦"
-                                    />
+                                    <TablaItems items={receta.ingredientes} titulo="Ingredientes" icono="🧁" />
+                                    <TablaItems items={insumos} titulo="Insumos de empaque" icono="📦" />
                                 </div>
-
-                                {/* Totales del desglose */}
                                 <div style={{ marginTop: 12, textAlign: "right", borderTop: "1px solid var(--borde)", paddingTop: 10 }}>
                                     {insumos.length > 0 && (
                                         <>
@@ -143,4 +170,3 @@ function ListaRecetas({ recetas, onEliminar, onEditar }) {
     )
 }
 
-export default ListaRecetas

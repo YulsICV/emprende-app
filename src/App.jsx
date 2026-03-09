@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { cargarDatos, guardarDatos } from "./data/db"
-import Navbar from "../components/Navbar"
+import Navbar from "./components/Navbar"
 import Recetas from "./pages/Recetas"
 import Inventario from "./pages/Inventario"
 import Pedidos from "./pages/Pedidos"
@@ -12,6 +12,7 @@ import Recetario from "./pages/Recetario"
 import LoginPage from "./pages/LoginPage"
 import "./App.css"
 import "./styles/components.css"
+
 
 const MODULOS = ["Recetas", "Recetario", "Produccion", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes"]
 
@@ -85,7 +86,7 @@ export default function App() {
 
       <main className="app-contenido">
         {activo === "Recetas"    && <Recetas    db={db} actualizarDb={actualizarDb} />}
-        {activo === "Recetario"  && <Recetario  db={db} />}
+        {activo === "Recetario"  && <Recetario  db={db} actualizarDb={actualizarDb} />}
         {activo === "Produccion" && <Produccion db={db} actualizarDb={actualizarDb} />}
         {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
         {activo === "Pedidos"    && <Pedidos    db={db} actualizarDb={actualizarDb} />}

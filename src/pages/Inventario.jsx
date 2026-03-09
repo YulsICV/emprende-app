@@ -12,33 +12,59 @@ const FORM_INICIAL = {
     tipo: "ingrediente"
 }
 
-// Acepta "7,140.00" o "7.140,00" o "7140" → siempre devuelve número
+// Acepta "7,140.00", "7.140,00", "7140", "1/2", "3/4", "1 1/2" → siempre devuelve número
 function parsearNumero(valor) {
     if (!valor && valor !== 0) return 0
-    const str = String(valor)
+    const str = String(valor).trim()
+
+    // Fracciones: "1/2", "3/4", "1 1/2", "2 1/4"
+    const fracMixta = str.match(/^(\d+)\s+(\d+)\/(\d+)$/)
+    if (fracMixta) {
+        return parseInt(fracMixta[1]) + parseInt(fracMixta[2]) / parseInt(fracMixta[3])
+    }
+    const fracSimple = str.match(/^(\d+)\/(\d+)$/)
+    if (fracSimple) {
+        return parseInt(fracSimple[1]) / parseInt(fracSimple[2])
+    }
+
     // Si tiene coma Y punto: el último separador es el decimal
     if (str.includes(",") && str.includes(".")) {
         const ultimaComa = str.lastIndexOf(",")
         const ultimoPunto = str.lastIndexOf(".")
         if (ultimaComa > ultimoPunto) {
-            // formato europeo: 7.140,00
             return parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0
         } else {
-            // formato americano: 7,140.00
             return parseFloat(str.replace(/,/g, "")) || 0
         }
     }
     // Solo coma: puede ser decimal (1,5) o miles (7,140)
     if (str.includes(",")) {
         const partes = str.split(",")
-        // Si la parte después de la coma tiene 1-2 dígitos → decimal
         if (partes.length === 2 && partes[1].length <= 2) {
             return parseFloat(str.replace(",", ".")) || 0
         }
-        // Si tiene más dígitos → separador de miles
         return parseFloat(str.replace(/,/g, "")) || 0
     }
     return parseFloat(str) || 0
+}
+
+// Sugiere conversión a unidad más natural (ej: 0.5 kg → 500 g)
+function sugerirConversion(valor, unidad) {
+    const num = parsearNumero(valor)
+    if (!num || Number.isInteger(num * 1000) === false) return null
+    if ((unidad === "kg" || unidad === "L") && num > 0 && num < 1) {
+        const factor = unidad === "kg" ? 1000 : 1000
+        const nuevaUnidad = unidad === "kg" ? "g" : "ml"
+        const nuevaVal = Math.round(num * factor)
+        return { valor: nuevaVal, unidad: nuevaUnidad }
+    }
+    if ((unidad === "kg" || unidad === "L") && !Number.isInteger(num) && num > 0) {
+        const factor = 1000
+        const nuevaUnidad = unidad === "kg" ? "g" : "ml"
+        const nuevaVal = Math.round(num * factor)
+        return { valor: nuevaVal, unidad: nuevaUnidad }
+    }
+    return null
 }
 
 // Muestra número con formato ₡ amigable mientras escribís
@@ -88,6 +114,7 @@ export default function Inventario({ db, actualizarDb }) {
     const [form, setForm] = useState(FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
     const [busqueda, setBusqueda] = useState("")
+    const [modalEliminar, setModalEliminar] = useState(null)
 
     const inventario = db.inventario || []
 
@@ -95,6 +122,14 @@ export default function Inventario({ db, actualizarDb }) {
     const numTamaño = parsearNumero(form.tamañoPaquete)
     const numCosto = parsearNumero(form.costoPorPaquete)
     const numMinimo = parsearNumero(form.minimo)
+
+    // Sugerencia de conversión cuando el tamaño tiene decimales en kg/L
+    const sugerencia = sugerirConversion(form.tamañoPaquete, form.unidad)
+
+    const aplicarSugerencia = () => {
+        if (!sugerencia) return
+        setForm(f => ({ ...f, tamañoPaquete: String(sugerencia.valor), unidad: sugerencia.unidad }))
+    }
 
     const totalInventario = numPaquetes * numTamaño
     const costoTotal = numPaquetes * numCosto
@@ -211,8 +246,8 @@ export default function Inventario({ db, actualizarDb }) {
     }
 
     const eliminar = (id) => {
-        if (!window.confirm("¿Eliminar este item del inventario?")) return
         actualizarDb("inventario", inventario.filter(i => i.id !== id))
+        setModalEliminar(null)
     }
 
     return (
@@ -352,30 +387,62 @@ export default function Inventario({ db, actualizarDb }) {
                     </div>
                 </div>
 
-                <div className="form-fila">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                     <InputNumero
-                        label="¿Cuántos paquetes compraste? *"
+                        label="¿Cuántos paquetes? *"
                         value={form.cantidadPaquetes}
                         onChange={v => setForm({ ...form, cantidadPaquetes: v })}
                         placeholder="Ej: 2"
                     />
-                    <InputNumero
-                        label="¿Cuánto trae cada paquete? *"
-                        value={form.tamañoPaquete}
-                        onChange={v => setForm({ ...form, tamañoPaquete: v })}
-                        placeholder="Ej: 910"
-                    />
                     <div className="form-grupo">
-                        <label>Unidad</label>
-                        <select
-                            value={form.unidad}
-                            onChange={e => setForm({ ...form, unidad: e.target.value })}
-                        >
-                            {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                        </select>
+                        <label style={{ textTransform: "none", fontSize: 12 }}>Cantidad por paquete *</label>
+                        <div style={{ display: "flex", gap: 6 }}>
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="Ej: 910 ó 1/2"
+                                value={form.tamañoPaquete}
+                                onChange={e => setForm({ ...form, tamañoPaquete: e.target.value })}
+                                style={{ flex: 1, minWidth: 0 }}
+                            />
+                            <select
+                                value={form.unidad}
+                                onChange={e => setForm({ ...form, unidad: e.target.value })}
+                                style={{ width: 72, flexShrink: 0 }}
+                            >
+                                {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                            </select>
+                        </div>
+                        {/* Preview de fracción */}
+                        {form.tamañoPaquete && parsearNumero(form.tamañoPaquete) > 0 &&
+                         form.tamañoPaquete.includes("/") && (
+                            <small style={{ color: "var(--acento)", marginTop: 3, display: "block", fontWeight: 600 }}>
+                                = {parsearNumero(form.tamañoPaquete)} {form.unidad}
+                            </small>
+                        )}
+                        {/* Sugerencia para conversión */}
+                        {sugerencia && (
+                            <div style={{
+                                marginTop: 6, padding: "7px 10px", borderRadius: 8,
+                                background: "#fffbeb", border: "1.5px solid #fcd34d",
+                                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                            }}>
+                                <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.3 }}>
+                                    💡 <strong>{sugerencia.valor} {sugerencia.unidad}</strong> es más exacto
+                                </span>
+                                <button type="button" onClick={aplicarSugerencia} style={{
+                                    all: "unset", cursor: "pointer", whiteSpace: "nowrap",
+                                    color: "#fff", background: "#f59e0b",
+                                    fontSize: 11, fontWeight: 700,
+                                    padding: "4px 10px", borderRadius: 6, flexShrink: 0,
+                                }}>Usar {sugerencia.valor}{sugerencia.unidad}</button>
+                            </div>
+                        )}
                     </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                     <InputMoneda
-                        label="Costo por paquete (₡)"
+                        label="₡ Costo por paquete"
                         value={form.costoPorPaquete}
                         onChange={v => setForm({ ...form, costoPorPaquete: v })}
                         placeholder="Ej: 7,140"
@@ -525,7 +592,7 @@ export default function Inventario({ db, actualizarDb }) {
                                                                     onClick={() => editar(i)}
                                                                     style={{ padding: "4px 10px", fontSize: 13 }}>✏️</button>
                                                                 <button className="btn-peligro" type="button"
-                                                                    onClick={() => eliminar(i.id)}>🗑</button>
+                                                                    onClick={() => setModalEliminar({ id: i.id, nombre: i.nombre })}>🗑</button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -551,6 +618,44 @@ export default function Inventario({ db, actualizarDb }) {
                     <p style={{ fontSize: 40 }}>📦</p>
                     <p>Tu inventario está vacío.</p>
                     <p style={{ fontSize: 13 }}>Agrega ingredientes e insumos arriba.</p>
+                </div>
+            )}
+
+            {modalEliminar && (
+                <div onClick={() => setModalEliminar(null)} style={{
+                    position: "fixed", inset: 0, zIndex: 1000,
+                    background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: 20,
+                }}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        background: "#fff", borderRadius: 20, padding: "32px 28px",
+                        width: "100%", maxWidth: 400, textAlign: "center",
+                        boxShadow: "0 25px 80px rgba(0,0,0,0.25)",
+                    }}>
+                        <div style={{ fontSize: 52, marginBottom: 12 }}>🗑️</div>
+                        <h3 style={{ margin: "0 0 8px", fontSize: 20, color: "#1a202c" }}>
+                            ¿Eliminar producto?
+                        </h3>
+                        <p style={{ color: "#718096", fontSize: 15, marginBottom: 28 }}>
+                            Vas a eliminar <strong style={{ color: "#2d3748" }}>"{modalEliminar.nombre}"</strong> del inventario.
+                            <br />Esta acción no se puede deshacer.
+                        </p>
+                        <div style={{ display: "flex", gap: 12 }}>
+                            <button type="button" onClick={() => setModalEliminar(null)} style={{
+                                flex: 1, padding: "12px 0", borderRadius: 12,
+                                background: "#e2e8f0", color: "#4a5568",
+                                border: "none", cursor: "pointer",
+                                fontSize: 15, fontWeight: 600,
+                            }}>Cancelar</button>
+                            <button type="button" onClick={() => eliminar(modalEliminar.id)} style={{
+                                flex: 1, padding: "12px 0", borderRadius: 12,
+                                background: "#e53e3e", color: "#fff",
+                                border: "none", cursor: "pointer",
+                                fontSize: 15, fontWeight: 700,
+                            }}>Sí, eliminar</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
