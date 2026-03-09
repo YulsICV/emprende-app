@@ -1,5 +1,5 @@
-import { connectDB } from "../lib/mongodb.js"
-import { Receta } from "../models/index.js"
+import { connectDB } from "./lib/mongodb.js"
+import { Receta } from "./models/index.js"
 
 export default async function handler(req, res) {
     await connectDB()
@@ -39,3 +39,6 @@ export default async function handler(req, res) {
             return res.status(405).json({ error: "Método no permitido" })
     }
 }
+
+
+
