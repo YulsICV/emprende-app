@@ -48,7 +48,7 @@ export default function LoginPage({ onLogin }) {
 
         {/* Logo + título */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-          <img src="./src/assets/logo-transparente.png" style={{ height: 60, objectFit: "contain", marginBottom: 4 }} alt="logo" />
+          <img src="/logo-transparente.png" style={{ height: 60, objectFit: "contain", marginBottom: 4 }} alt="logo" />
           <h1 style={{
             fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 26, fontWeight: 700, color: "#1a9e87", margin: 0,
