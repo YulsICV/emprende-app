@@ -6,13 +6,14 @@ import ResumenInventario from "../components/inventario/ResumenInventario"
 import TablaInventario from "../components/inventario/TablaInventario"
 import ModalEliminar from "../components/inventario/ModalEliminar"
 
-export default function Inventario({ db, actualizarDb }) {
+export default function Inventario({ db }) {
     const {
         form, setForm,
         editandoId,
         busqueda, setBusqueda,
         modalEliminar, setModalEliminar,
         inventario,
+        cargando,
         bajoStock,
         itemsFiltrados,
         totalInventario,
@@ -25,18 +26,21 @@ export default function Inventario({ db, actualizarDb }) {
 
     const metricas = useMetricasInventario(db)
 
-    if (cargando) return <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>⏳ Cargando inventario...</div>
+    if (cargando) return (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>
+            ⏳ Cargando inventario...
+        </div>
+    )
 
     return (
         <div>
             <h2 className="page-titulo">📦 Inventario</h2>
 
-            {/* Alertas stock bajo */}
             {bajoStock.length > 0 && (
                 <div className="alerta">
                     <p style={{ fontWeight: 700, marginBottom: 6 }}>⚠️ Productos con stock bajo:</p>
                     {bajoStock.map(i => (
-                        <p key={i.id} style={{ margin: "2px 0" }}>
+                        <p key={i._id} style={{ margin: "2px 0" }}>
                             • <strong>{i.nombre}</strong>: {parsearNumero(i.cantidad).toFixed(1)}{i.unidad}
                             {i.minimo && (
                                 <span style={{ color: "var(--texto-suave)" }}>
@@ -48,7 +52,6 @@ export default function Inventario({ db, actualizarDb }) {
                 </div>
             )}
 
-            {/* Layout dos columnas: formulario | resumen */}
             <div style={{
                 display: "grid",
                 gridTemplateColumns: inventario.length > 0 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr",
@@ -73,7 +76,6 @@ export default function Inventario({ db, actualizarDb }) {
                 )}
             </div>
 
-            {/* Tabla */}
             <TablaInventario
                 inventario={inventario}
                 itemsFiltrados={itemsFiltrados}
@@ -84,7 +86,6 @@ export default function Inventario({ db, actualizarDb }) {
                 onEliminar={setModalEliminar}
             />
 
-            {/* Modal eliminar */}
             <ModalEliminar
                 item={modalEliminar}
                 onConfirmar={eliminar}
@@ -93,4 +94,3 @@ export default function Inventario({ db, actualizarDb }) {
         </div>
     )
 }
-
