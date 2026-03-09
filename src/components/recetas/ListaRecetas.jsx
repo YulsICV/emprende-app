@@ -52,14 +52,15 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
         <div>
             <h3 className="seccion-titulo">Recetas guardadas</h3>
             {recetas.map((receta) => {
+                // FIX: usar _id de MongoDB, no id
+                const recetaId = receta._id
                 const insumos = receta.insumos || []
                 const costoInsumos = insumos.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
                 const costoIngredientes = receta.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
-                const confirmando = confirmarId === receta.id
+                const confirmando = confirmarId === recetaId
 
                 return (
-                    <div className="card" key={receta.id}>
-                        {/* Cabecera */}
+                    <div className="card" key={recetaId}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                             <div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -77,14 +78,13 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
                             </div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
                                 <button className="btn-secundario" type="button"
-                                    onClick={() => setAbierta(abierta === receta.id ? null : receta.id)}>
-                                    {abierta === receta.id ? "▲ Ocultar" : "▼ Ver detalle"}
+                                    onClick={() => setAbierta(abierta === recetaId ? null : recetaId)}>
+                                    {abierta === recetaId ? "▲ Ocultar" : "▼ Ver detalle"}
                                 </button>
                                 <button className="btn-secundario" type="button" onClick={() => onEditar(receta)}>
                                     ✏️ Editar
                                 </button>
 
-                                {/* Botón eliminar con confirmación inline */}
                                 {confirmando ? (
                                     <div style={{
                                         display: "flex", alignItems: "center", gap: 6,
@@ -94,7 +94,7 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
                                         <span style={{ fontSize: 12, color: "#e53e3e", fontWeight: 600, whiteSpace: "nowrap" }}>
                                             ¿Eliminar?
                                         </span>
-                                        <button type="button" onClick={() => handleEliminar(receta.id)} style={{
+                                        <button type="button" onClick={() => handleEliminar(recetaId)} style={{
                                             all: "unset", cursor: "pointer",
                                             background: "#e53e3e", color: "#fff",
                                             fontSize: 12, fontWeight: 700,
@@ -108,14 +108,13 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
                                         }}>No</button>
                                     </div>
                                 ) : (
-                                    <button className="btn-peligro" type="button" onClick={() => handleEliminar(receta.id)}>
+                                    <button className="btn-peligro" type="button" onClick={() => handleEliminar(recetaId)}>
                                         🗑
                                     </button>
                                 )}
                             </div>
                         </div>
 
-                        {/* Resumen de costos */}
                         <div className="resumen-grid" style={{ marginTop: 12 }}>
                             <div className="resumen-item">
                                 <div className="valor">₡{parseFloat(receta.costoTotal || 0).toFixed(0)}</div>
@@ -135,8 +134,7 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
                             </div>
                         </div>
 
-                        {/* Detalle expandible */}
-                        {abierta === receta.id && (
+                        {abierta === recetaId && (
                             <div style={{ marginTop: 16, borderTop: "1px solid var(--borde)", paddingTop: 16 }}>
                                 <div style={{ overflowX: "auto" }}>
                                     <TablaItems items={receta.ingredientes} titulo="Ingredientes" icono="🧁" />
@@ -169,4 +167,3 @@ export default function ListaRecetas({ recetas, onEliminar, onEditar }) {
         </div>
     )
 }
-

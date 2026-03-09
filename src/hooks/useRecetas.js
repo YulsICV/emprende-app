@@ -63,26 +63,53 @@ function enriquecerIngrediente(ing, inventario) {
     }
 }
 
+// Versión limpia para recetario: solo nombre, pasos, ingredientes sin costos
+function construirEntradaRecetario(form, recetaCostoId) {
+    return {
+        nombre: form.nombre,
+        categoria: form.categoria,
+        unidades: form.unidades,
+        envioGratis: form.envioGratis,
+        fotoBase64: form.fotoBase64 || "",
+        fotoUrl: form.fotoUrl || "",
+        equipo: form.equipo || "",
+        temperatura: form.temperatura || "",
+        tiempoCoccion: form.tiempoCoccion || "",
+        pasos: form.pasos || [],
+        ingredientes: (form.ingredientes || []).map(i => ({
+            nombre: i.nombre,
+            cantidadUso: i.cantidadUso,
+            unidadUso: i.unidadUso,
+        })),
+        insumos: (form.insumos || []).map(i => ({
+            nombre: i.nombre,
+            cantidadUso: i.cantidadUso,
+            unidadUso: i.unidadUso,
+        })),
+        recetaCostoId,
+        fecha: new Date().toISOString(),
+    }
+}
+
 export function useRecetas() {
     const [form, setForm] = useState(FORM_INICIAL)
     const [ingForm, setIngForm] = useState(ING_FORM_INICIAL)
     const [insumoForm, setInsumoForm] = useState(ING_FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
     const [recetasCostos, setRecetasCostos] = useState([])
-    const [recetario, setRecetario] = useState([])          // FIX 1: estado del recetario
+    const [recetario, setRecetario] = useState([])
     const [inventario, setInventario] = useState([])
     const [cargando, setCargando] = useState(true)
 
-    // FIX 1: Cargar recetas, inventario Y recetario desde MongoDB
     useEffect(() => {
         Promise.all([
             apiRecetas.getAll(),
             apiInventario.getAll(),
-            apiRecetario.getAll(),              // ← antes faltaba esto
+            apiRecetario.getAll(),
         ]).then(([recetas, inv, recetarioData]) => {
             setRecetasCostos(Array.isArray(recetas) ? recetas : [])
             setInventario(Array.isArray(inv) ? inv : [])
-            setRecetario(Array.isArray(recetarioData) ? recetarioData : [])  // ← y esto
+            setRecetario(Array.isArray(recetarioData) ? recetarioData : [])
         }).catch(err => console.error("Error cargando datos:", err))
         .finally(() => setCargando(false))
     }, [])
@@ -134,30 +161,41 @@ export function useRecetas() {
         }
 
         if (editandoId) {
-            // FIX 2a: Actualizar receta
+            // Actualizar en Recetas & Costos
             const updated = await apiRecetas.actualizar({ ...datos, id: editandoId })
             setRecetasCostos(prev => prev.map(r => r._id === editandoId ? updated : r))
 
-            // FIX 2b: Sincronizar con recetario si tiene vínculo
+            // Sincronizar recetario
+            const entradaRecetario = construirEntradaRecetario(form, editandoId)
             if (form.recetarioId) {
-                const updatedRec = await apiRecetario.actualizar({ ...datos, id: form.recetarioId })
+                // Ya existe — actualizar
+                const updatedRec = await apiRecetario.actualizar({ ...entradaRecetario, id: form.recetarioId })
                 setRecetario(prev => prev.map(r => r._id === form.recetarioId ? updatedRec : r))
+            } else {
+                // No tenía vínculo — crear y vincular
+                const nuevaEntrada = await apiRecetario.crear(entradaRecetario)
+                setRecetario(prev => [nuevaEntrada, ...prev])
+                await apiRecetas.actualizar({ id: editandoId, recetarioId: nuevaEntrada._id })
+                setRecetasCostos(prev => prev.map(r =>
+                    r._id === editandoId ? { ...r, recetarioId: nuevaEntrada._id } : r
+                ))
             }
 
             setEditandoId(null)
         } else {
-            // FIX 2c: Crear receta nueva
+            // Crear en Recetas & Costos
             const nueva = await apiRecetas.crear(datos)
             setRecetasCostos(prev => [nueva, ...prev])
 
-            // FIX 2d: Crear en recetario también y guardar el vínculo
-            const enRecetario = await apiRecetario.crear({ ...datos, recetaCostoId: nueva._id })
-            setRecetario(prev => [enRecetario, ...prev])
+            // Crear automáticamente en recetario (sin costos ni precios)
+            const entradaRecetario = construirEntradaRecetario(form, nueva._id)
+            const nuevaEntrada = await apiRecetario.crear(entradaRecetario)
+            setRecetario(prev => [nuevaEntrada, ...prev])
 
-            // Guardar el recetarioId en la receta para futuras sincronizaciones
-            await apiRecetas.actualizar({ id: nueva._id, recetarioId: enRecetario._id })
+            // Guardar vínculo bidireccional
+            await apiRecetas.actualizar({ id: nueva._id, recetarioId: nuevaEntrada._id })
             setRecetasCostos(prev => prev.map(r =>
-                r._id === nueva._id ? { ...r, recetarioId: enRecetario._id } : r
+                r._id === nueva._id ? { ...r, recetarioId: nuevaEntrada._id } : r
             ))
         }
 
@@ -165,13 +203,14 @@ export function useRecetas() {
     }
 
     // ── Eliminar receta ──
-    // FIX 3: Eliminar usando _id correctamente y limpiar también del recetario
     const eliminarReceta = async (id) => {
+        // id ya viene como _id desde ListaRecetas (corregido)
         const receta = recetasCostos.find(r => r._id === id)
 
         await apiRecetas.eliminar(id)
         setRecetasCostos(prev => prev.filter(r => r._id !== id))
 
+        // Eliminar entrada vinculada del recetario
         if (receta?.recetarioId) {
             await apiRecetario.eliminar(receta.recetarioId)
             setRecetario(prev => prev.filter(r => r._id !== receta.recetarioId))
@@ -245,24 +284,20 @@ export function useRecetas() {
     }
 
     return {
-        // form
         form, setForm,
         ingForm, setIngForm,
         insumoForm, setInsumoForm,
         editandoId, setEditandoId,
-        // datos
         recetasCostos,
-        recetario,          // FIX 1: exponer recetario para FormularioRecetas
+        recetario,
         inventario,
         cargando,
-        // cálculos
         costoIngredientes,
         costoInsumos,
         costoTotal,
         costoPorUnidad,
         precioMayoreo,
         precioMenudeo,
-        // acciones
         guardarReceta,
         eliminarReceta,
         editarReceta,
