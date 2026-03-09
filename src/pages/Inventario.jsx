@@ -21,9 +21,11 @@ export default function Inventario({ db, actualizarDb }) {
         editar,
         cancelarEdicion,
         eliminar,
-    } = useInventario(db, actualizarDb)
+    } = useInventario()
 
     const metricas = useMetricasInventario(db)
+
+    if (cargando) return <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>⏳ Cargando inventario...</div>
 
     return (
         <div>
@@ -91,3 +93,4 @@ export default function Inventario({ db, actualizarDb }) {
         </div>
     )
 }
+

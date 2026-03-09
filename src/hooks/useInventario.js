@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { parsearNumero } from "../utils/parsearNumero"
+import { apiInventario } from "./useApi"
 
 const FORM_INICIAL = {
     nombre: "",
@@ -11,13 +12,22 @@ const FORM_INICIAL = {
     tipo: "ingrediente"
 }
 
-export function useInventario(db, actualizarDb) {
+export function useInventario() {
     const [form, setForm] = useState(FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
     const [busqueda, setBusqueda] = useState("")
     const [modalEliminar, setModalEliminar] = useState(null)
+    const [inventario, setInventario] = useState([])
+    const [cargando, setCargando] = useState(true)
 
-    const inventario = db.inventario || []
+    // ── Cargar inventario desde MongoDB al montar ──
+    useEffect(() => {
+        apiInventario.getAll()
+            .then(data => setInventario(Array.isArray(data) ? data : []))
+            .catch(err => console.error("Error cargando inventario:", err))
+            .finally(() => setCargando(false))
+    }, [])
+
     const numPaquetes = parsearNumero(form.cantidadPaquetes)
     const numTamaño   = parsearNumero(form.tamañoPaquete)
     const numCosto    = parsearNumero(form.costoPorPaquete)
@@ -32,8 +42,9 @@ export function useInventario(db, actualizarDb) {
         i.nombre.toLowerCase().includes(busqueda.toLowerCase())
     )
 
-    const guardar = () => {
+    const guardar = async () => {
         if (!form.nombre || !form.cantidadPaquetes || !form.tamañoPaquete) return
+
         const datos = {
             nombre: form.nombre,
             tipo: form.tipo || "ingrediente",
@@ -45,17 +56,14 @@ export function useInventario(db, actualizarDb) {
             cantidad: numPaquetes * numTamaño,
             costoTotal: numPaquetes * numCosto,
         }
+
         if (editandoId) {
-            actualizarDb("inventario", inventario.map(i =>
-                i.id === editandoId ? { ...datos, id: editandoId } : i
-            ))
+            const updated = await apiInventario.actualizar({ ...datos, id: editandoId })
+            setInventario(prev => prev.map(i => i._id === editandoId ? updated : i))
             setEditandoId(null)
         } else {
-            actualizarDb("inventario", [...inventario, {
-                ...datos,
-                id: crypto.randomUUID(),
-                fecha: new Date().toISOString()
-            }])
+            const nuevo = await apiInventario.crear(datos)
+            setInventario(prev => [nuevo, ...prev])
         }
         setForm(FORM_INICIAL)
     }
@@ -70,7 +78,7 @@ export function useInventario(db, actualizarDb) {
             costoPorPaquete: item.costoPorPaquete ? String(item.costoPorPaquete) : "",
             minimo: item.minimo ? String(item.minimo) : ""
         })
-        setEditandoId(item.id)
+        setEditandoId(item._id)
         window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
@@ -79,8 +87,9 @@ export function useInventario(db, actualizarDb) {
         setForm(FORM_INICIAL)
     }
 
-    const eliminar = (id) => {
-        actualizarDb("inventario", inventario.filter(i => i.id !== id))
+    const eliminar = async (id) => {
+        await apiInventario.eliminar(id)
+        setInventario(prev => prev.filter(i => i._id !== id))
         setModalEliminar(null)
     }
 
@@ -90,6 +99,7 @@ export function useInventario(db, actualizarDb) {
         busqueda, setBusqueda,
         modalEliminar, setModalEliminar,
         inventario,
+        cargando,
         bajoStock,
         itemsFiltrados,
         totalInventario,
