@@ -1,3 +1,4 @@
+// src/components/clientes/FormularioCliente.jsx
 export default function FormularioCliente({ form, setForm, guardar, editandoId, cancelar }) {
     return (
         <div className="card">
