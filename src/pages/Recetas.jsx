@@ -20,6 +20,7 @@ export default function Recetas() {
         insumoForm, setInsumoForm,
         editandoId, setEditandoId,
         recetasCostos,
+        recetario,          // FIX: antes no se desestructuraba
         inventario,
         cargando,
         costoIngredientes,
@@ -53,7 +54,7 @@ export default function Recetas() {
             <FormularioRecetas
                 form={form}
                 setForm={setForm}
-                recetario={recetasCostos}
+                recetario={recetario}       // FIX: antes era recetasCostos, ahora es recetario
                 onJalarReceta={editarReceta}
                 precioMayoreo={precioMayoreo}
                 precioMenudeo={precioMenudeo}
