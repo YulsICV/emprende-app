@@ -67,8 +67,48 @@ const pedidoSchema = new mongoose.Schema({
     fecha:         { type: Date, default: Date.now },
 }, { timestamps: true })
 
+// ── Usuario ──
+const usuarioSchema = new mongoose.Schema({
+    // Datos del negocio
+    negocioId:     { type: String, unique: true },   // se genera al registrarse
+    nombreNegocio: { type: String, default: "" },
+
+    // Auth email/password
+    email:         { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash:  { type: String },                 // null si solo usa Google
+
+    // Auth Google
+    googleId:      { type: String, sparse: true },   // sparse = permite null sin romper unique
+    fotoGoogle:    { type: String },
+
+    // Perfil
+    nombre:        { type: String, default: "" },
+    inicial:       { type: String, default: "" },
+
+    // Recuperar contraseña
+    resetToken:       { type: String },
+    resetTokenExpiry: { type: Date },
+
+    // Control
+    activo:        { type: Boolean, default: true },
+    fecha:         { type: Date, default: Date.now },
+}, { timestamps: true })
+
+// Generar negocioId automáticamente al crear usuario si no tiene uno
+usuarioSchema.pre("save", function (next) {
+    if (!this.negocioId) {
+        this.negocioId = this._id.toString()
+    }
+    // Generar inicial desde nombre si no se provee
+    if (!this.inicial && this.nombre) {
+        this.inicial = this.nombre.charAt(0).toUpperCase()
+    }
+    next()
+})
+
 // Evitar re-registrar modelos en hot reload
 export const Inventario = mongoose.models.Inventario || mongoose.model("Inventario", inventarioSchema)
 export const Receta     = mongoose.models.Receta     || mongoose.model("Receta",     recetaSchema)
 export const Recetario  = mongoose.models.Recetario  || mongoose.model("Recetario",  recetarioSchema)
 export const Pedido     = mongoose.models.Pedido     || mongoose.model("Pedido",     pedidoSchema)
+export const Usuario    = mongoose.models.Usuario    || mongoose.model("Usuario",    usuarioSchema)

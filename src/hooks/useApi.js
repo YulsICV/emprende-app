@@ -1,14 +1,50 @@
-// Hook genérico para llamadas a la API
-// Reemplaza las funciones de db.js (localStorage)
-
 const BASE = "/api"
 
-// Headers base — aquí agregaremos JWT cuando tengamos auth
+// Headers con JWT si existe
 function headers() {
+    const token = localStorage.getItem("token")
     return {
         "Content-Type": "application/json",
-        "x-negocio-id": "default", // cambiará cuando tengamos usuarios reales
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     }
+}
+
+// ── AUTH ──
+export const apiAuth = {
+    registro: (datos) =>
+        fetch(`${BASE}/auth?accion=registro`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify(datos),
+        }).then(r => r.json()),
+
+    login: (datos) =>
+        fetch(`${BASE}/auth?accion=login`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify(datos),
+        }).then(r => r.json()),
+
+    google: (credential) =>
+        fetch(`${BASE}/auth?accion=google`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify({ credential }),
+        }).then(r => r.json()),
+
+    recuperar: (email) =>
+        fetch(`${BASE}/auth?accion=recuperar`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify({ email }),
+        }).then(r => r.json()),
+
+    reset: (token, password) =>
+        fetch(`${BASE}/auth?accion=reset`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify({ token, password }),
+        }).then(r => r.json()),
 }
 
 // ── INVENTARIO ──

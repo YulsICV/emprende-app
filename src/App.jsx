@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { cargarDatos, guardarDatos } from "./data/db"
+import { useAuth } from "./AuthContext"
 import Navbar from "./components/Navbar"
 import Recetas from "./pages/Recetas"
 import Inventario from "./pages/Inventario"
@@ -13,88 +14,67 @@ import LoginPage from "./pages/LoginPage"
 import "./App.css"
 import "./styles/components.css"
 
-
 const MODULOS = ["Recetas", "Recetario", "Produccion", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes"]
 
 export default function App() {
-  // 🔑 Usuario persistente
-  const [usuario, setUsuario] = useState(() => {
-    const savedUser = localStorage.getItem("usuario")
-    return savedUser ? JSON.parse(savedUser) : null
-  })
+    const { usuario, logout } = useAuth()
 
-  // 📦 Base de datos persistente
-  const [db, setDb] = useState(() => {
-    const datos = cargarDatos()
-    if (!datos.pedidos) datos.pedidos = []
-    return datos
-  })
-
-  // 📍 Módulo activo persistente
-  const [activo, setActivo] = useState(() => {
-    return "Recetas"
-  })
-
-  // 📝 Guardar usuario cuando cambie
-  useEffect(() => {
-    if (usuario) {
-      localStorage.setItem("usuario", JSON.stringify(usuario))
-    } else {
-      localStorage.removeItem("usuario")
-    }
-  }, [usuario])
-
-  // 📝 Guardar módulo activo cuando cambie
-  useEffect(() => {
-    localStorage.setItem("activo", activo)
-  }, [activo])
-
-  const actualizarDb = (clave, valor, extra = {}) => {
-    setDb(prev => {
-      const nuevaDb = { ...prev, [clave]: valor, ...extra }
-      guardarDatos(nuevaDb)
-      return nuevaDb
+    const [db, setDb] = useState(() => {
+        const datos = cargarDatos()
+        if (!datos.pedidos) datos.pedidos = []
+        return datos
     })
-  }
 
-  if (!usuario) return <LoginPage onLogin={setUsuario} />
+    const [activo, setActivo] = useState("Recetas")
 
-  return (
-    <div className="app">
-      <header className="app-header">
+    const actualizarDb = (clave, valor, extra = {}) => {
+        setDb(prev => {
+            const nuevaDb = { ...prev, [clave]: valor, ...extra }
+            guardarDatos(nuevaDb)
+            return nuevaDb
+        })
+    }
 
-        <div className="header-logo">
-          <img src="/logo-transparente.png" style={{ height: 34 }} alt="logo" />
-          <span className="header-titulo">Emprende App</span>
+    if (!usuario) return <LoginPage />
+
+    return (
+        <div className="app">
+            <header className="app-header">
+                <div className="header-logo">
+                    <img src="/logo-transparente.png" style={{ height: 34 }} alt="logo" />
+                    <span className="header-titulo">Emprende App</span>
+                </div>
+
+                <Navbar
+                    activo={activo}
+                    setActivo={setActivo}
+                    usuario={usuario}
+                    onCerrarSesion={logout}
+                    modulos={MODULOS}
+                />
+
+                <div className="header-sesion">
+                    {usuario.fotoGoogle ? (
+                        <img src={usuario.fotoGoogle} alt="avatar"
+                            style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                        <div className="sesion-avatar">{usuario.inicial}</div>
+                    )}
+                    <span className="sesion-nombre">{usuario.nombre}</span>
+                    <button className="sesion-salir" onClick={logout}>Salir</button>
+                </div>
+            </header>
+
+            <main className="app-contenido">
+                {activo === "Recetas"    && <Recetas    db={db} actualizarDb={actualizarDb} />}
+                {activo === "Recetario"  && <Recetario  db={db} actualizarDb={actualizarDb} />}
+                {activo === "Produccion" && <Produccion db={db} actualizarDb={actualizarDb} />}
+                {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
+                {activo === "Pedidos"    && <Pedidos    db={db} actualizarDb={actualizarDb} />}
+                {activo === "Ventas"     && <Ventas     db={db} actualizarDb={actualizarDb} />}
+                {activo === "Clientes"   && <Clientes   db={db} actualizarDb={actualizarDb} />}
+                {activo === "Reportes"   && <Reportes   db={db} actualizarDb={actualizarDb} />}
+            </main>
         </div>
-
-        <Navbar
-          activo={activo}
-          setActivo={setActivo}
-          usuario={usuario}
-          onCerrarSesion={() => setUsuario(null)}
-          modulos={MODULOS}
-        />
-
-        <div className="header-sesion">
-          <div className="sesion-avatar">{usuario.inicial}</div>
-          <span className="sesion-nombre">{usuario.nombre}</span>
-          <button className="sesion-salir" onClick={() => setUsuario(null)}>Salir</button>
-        </div>
-
-      </header>
-
-      <main className="app-contenido">
-        {activo === "Recetas"    && <Recetas    db={db} actualizarDb={actualizarDb} />}
-        {activo === "Recetario"  && <Recetario  db={db} actualizarDb={actualizarDb} />}
-        {activo === "Produccion" && <Produccion db={db} actualizarDb={actualizarDb} />}
-        {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
-        {activo === "Pedidos"    && <Pedidos    db={db} actualizarDb={actualizarDb} />}
-        {activo === "Ventas"     && <Ventas     db={db} actualizarDb={actualizarDb} />}
-        {activo === "Clientes"   && <Clientes   db={db} actualizarDb={actualizarDb} />}
-        {activo === "Reportes"   && <Reportes   db={db} actualizarDb={actualizarDb} />}
-      </main>
-    </div>
-  )
+    )
 }
-

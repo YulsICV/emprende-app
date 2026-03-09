@@ -1,38 +1,13 @@
-import mongoose from "mongoose"
-
-const MONGODB_URI = process.env.MONGODB_URI
-let cached = global.mongoose
-if (!cached) cached = global.mongoose = { conn: null, promise: null }
-
-async function connectDB() {
-    if (cached.conn) return cached.conn
-    if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false })
-    }
-    cached.conn = await cached.promise
-    return cached.conn
-}
-
-const schema = new mongoose.Schema({
-    negocioId:     { type: String, required: true, index: true },
-    nombre:        { type: String, required: true },
-    categoria:     { type: String },
-    unidades:      { type: Number },
-    ingredientes:  { type: Array, default: [] },
-    fotoBase64:    { type: String },
-    fotoUrl:       { type: String },
-    equipo:        { type: String },
-    temperatura:   { type: Number },
-    tiempoCoccion: { type: Number },
-    pasos:         { type: Array, default: [] },
-    fecha:         { type: Date, default: Date.now },
-}, { timestamps: true })
-
-const Recetario = mongoose.models.Recetario || mongoose.model("Recetario", schema)
+import { connectDB } from "./lib/mongodb.js"
+import { Recetario } from "./models/index.js"
+import { verificarToken } from "./lib/verificarToken.js"
 
 export default async function handler(req, res) {
     await connectDB()
-    const negocioId = req.headers["x-negocio-id"] || "default"
+
+    const usuario = verificarToken(req)
+    if (!usuario) return res.status(401).json({ error: "No autorizado" })
+    const negocioId = usuario.negocioId
 
     switch (req.method) {
         case "GET": {
