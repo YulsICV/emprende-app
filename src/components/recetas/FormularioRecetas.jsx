@@ -180,13 +180,12 @@ export default function FormularioRecetas({
 
             {/* ══ FOTO + CAMPOS BÁSICOS (lado a lado) ══ */}
             <div style={{
-                display: "flex", gap: 20, alignItems: "flex-start",
+                display: "flex", gap: 20, alignItems: "flex-start", justifyContent: "center",
                 marginBottom: 16, flexWrap: "wrap",
             }}>
                 {/* Columna foto */}
                 <div style={{
-                    flexShrink: 0, display: "flex", flexDirection: "column",
-                    gap: 8, width: 120, minWidth: 120, alignItems: "center",
+                    flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, width: 120, minWidth: 120, alignItems: "center", margin: "0 auto",
                 }}>
                     <div style={{
                         width: 120, height: 120, borderRadius: 12,
@@ -408,3 +407,4 @@ export default function FormularioRecetas({
         </div>
     )
 }
+
