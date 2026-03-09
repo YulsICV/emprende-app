@@ -73,7 +73,8 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                     {items.map(i => {
                                         const bajo = i.minimo && parsearNumero(i.cantidad) <= parsearNumero(i.minimo)
                                         return (
-                                            <tr key={i.id} style={{ background: bajo ? "#fffbeb" : undefined }}>
+                                            // FIX: key usa _id de MongoDB
+                                            <tr key={i._id} style={{ background: bajo ? "#fffbeb" : undefined }}>
                                                 <td>
                                                     <strong>{i.nombre}</strong>
                                                     {bajo && (
@@ -108,8 +109,9 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                                         <button className="btn-secundario" type="button"
                                                             onClick={() => onEditar(i)}
                                                             style={{ padding: "4px 10px", fontSize: 13 }}>✏️</button>
+                                                        {/* FIX: pasar _id en lugar de id */}
                                                         <button className="btn-peligro" type="button"
-                                                            onClick={() => onEliminar({ id: i.id, nombre: i.nombre })}>🗑</button>
+                                                            onClick={() => onEliminar({ _id: i._id, nombre: i.nombre })}>🗑</button>
                                                     </div>
                                                 </td>
                                             </tr>
