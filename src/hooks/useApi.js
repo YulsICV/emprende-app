@@ -62,3 +62,29 @@ export const apiRecetas = {
             headers: headers(),
         }).then(r => r.json()),
 }
+
+// ── RECETARIO ──
+export const apiRecetario = {
+    getAll: () =>
+        fetch(`${BASE}/recetario`, { headers: headers() }).then(r => r.json()),
+
+    crear: (item) =>
+        fetch(`${BASE}/recetario`, {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify(item),
+        }).then(r => r.json()),
+
+    actualizar: (item) =>
+        fetch(`${BASE}/recetario`, {
+            method: "PUT",
+            headers: headers(),
+            body: JSON.stringify(item),
+        }).then(r => r.json()),
+
+    eliminar: (id) =>
+        fetch(`${BASE}/recetario?id=${id}`, {
+            method: "DELETE",
+            headers: headers(),
+        }).then(r => r.json()),
+}
