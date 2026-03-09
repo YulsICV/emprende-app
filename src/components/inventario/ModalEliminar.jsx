@@ -34,7 +34,7 @@ export default function ModalEliminar({ item, onConfirmar, onCancelar }) {
                         border: "none", cursor: "pointer",
                         fontSize: 15, fontWeight: 600,
                     }}>Cancelar</button>
-                    <button type="button" onClick={() => onConfirmar(item.id)} style={{
+                    <button type="button" onClick={() => onConfirmar(item._id)} style={{
                         flex: 1, padding: "12px 0", borderRadius: 12,
                         background: "#e53e3e", color: "#fff",
                         border: "none", cursor: "pointer",
