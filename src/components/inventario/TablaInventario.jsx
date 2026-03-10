@@ -1,8 +1,17 @@
 import { parsearNumero } from "../../utils/parsearNumero"
+import { formatearCantidad } from "../../hooks/useInventario"
+import { CONVERSIONES_A_GRAMOS } from "../../data/conversiones"
+
+function aGramos(cantidad, unidad) {
+    const n = parsearNumero(cantidad)
+    const factor = CONVERSIONES_A_GRAMOS[unidad]
+    if (!factor) return n
+    return n * factor
+}
 
 const CATEGORIAS = [
-    { tipo: "ingrediente", label: "🧁 Ingredientes",        color: "#6366f1" },
-    { tipo: "insumo",      label: "📦 Insumos de empaque",  color: "#10b981" },
+    { tipo: "ingrediente", label: "🧁 Ingredientes",       color: "#6366f1" },
+    { tipo: "insumo",      label: "📦 Insumos de empaque", color: "#10b981" },
 ]
 
 export default function TablaInventario({ inventario, itemsFiltrados, bajoStock, busqueda, setBusqueda, onEditar, onEliminar }) {
@@ -63,17 +72,17 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                         <th>Nombre</th>
                                         <th>Paquetes</th>
                                         <th>Disponible</th>
-                                        <th>Costo unitario</th>
+                                        <th>Costo por g</th>
                                         <th>Costo total</th>
-                                        <th>Alerta</th>
+                                        <th>Alerta (g)</th>
                                         <th style={{ textAlign: "center" }}>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.map(i => {
-                                        const bajo = i.minimo && parsearNumero(i.cantidad) <= parsearNumero(i.minimo)
+                                        const cantidadEnGramos = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
+                                        const bajo = i.minimo && cantidadEnGramos <= parsearNumero(i.minimo)
                                         return (
-                                            // FIX: key usa _id de MongoDB
                                             <tr key={i._id} style={{ background: bajo ? "#fffbeb" : undefined }}>
                                                 <td>
                                                     <strong>{i.nombre}</strong>
@@ -90,26 +99,25 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                                 </td>
                                                 <td>
                                                     <strong style={{ color: bajo ? "#d97706" : color }}>
-                                                        {parsearNumero(i.cantidad).toLocaleString("es-CR")}{i.unidad}
+                                                        {formatearCantidad(cantidadEnGramos, i.unidad)}
                                                     </strong>
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)", fontSize: 13 }}>
-                                                    {i.costoTotal && i.cantidad
-                                                        ? `₡${(parsearNumero(i.costoTotal) / parsearNumero(i.cantidad)).toFixed(2)}/${i.unidad}`
+                                                    {i.costoPorGramo
+                                                        ? `₡${i.costoPorGramo.toFixed(4)}/g`
                                                         : "—"}
                                                 </td>
                                                 <td>
                                                     {i.costoTotal ? `₡${parsearNumero(i.costoTotal).toLocaleString("es-CR")}` : "—"}
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)" }}>
-                                                    {i.minimo ? `${i.minimo}${i.unidad}` : "—"}
+                                                    {i.minimo ? `${i.minimo}g` : "—"}
                                                 </td>
                                                 <td style={{ textAlign: "center" }}>
                                                     <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                                                         <button className="btn-secundario" type="button"
                                                             onClick={() => onEditar(i)}
                                                             style={{ padding: "4px 10px", fontSize: 13 }}>✏️</button>
-                                                        {/* FIX: pasar _id en lugar de id */}
                                                         <button className="btn-peligro" type="button"
                                                             onClick={() => onEliminar({ _id: i._id, nombre: i.nombre })}>🗑</button>
                                                     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { parsearNumero } from "../utils/parsearNumero"
+import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
 import { apiInventario } from "./useApi"
 
 const FORM_INICIAL = {
@@ -12,14 +13,23 @@ const FORM_INICIAL = {
     tipo: "ingrediente"
 }
 
-// FIX: convierte a unidad base para comparar correctamente kg vs g, L vs ml
-function aUnidadBase(cantidad, unidad) {
+function aGramos(cantidad, unidad) {
     const n = parsearNumero(cantidad)
-    switch (unidad) {
-        case "kg": return n * 1000
-        case "L":  return n * 1000
-        default:   return n
+    const factor = CONVERSIONES_A_GRAMOS[unidad]
+    if (!factor) return n
+    return n * factor
+}
+
+export function formatearCantidad(cantidadBase, unidad) {
+    const factor = CONVERSIONES_A_GRAMOS[unidad]
+    if (!factor) return `${cantidadBase} ${unidad}`
+    const enUnidadOriginal = cantidadBase / factor
+    if ((unidad === "kg" || unidad === "L") && enUnidadOriginal < 1) {
+        const unidadMenor = unidad === "kg" ? "g" : "ml"
+        return `${Math.round(cantidadBase)} ${unidadMenor}`
     }
+    const val = parseFloat(enUnidadOriginal.toFixed(2))
+    return `${val} ${unidad}`
 }
 
 export function useInventario() {
@@ -44,12 +54,10 @@ export function useInventario() {
     const totalInventario = numPaquetes * numTamaño
     const costoTotal      = numPaquetes * numCosto
 
-    // FIX: comparar en unidad base para que 1kg vs 500g funcione correctamente
     const bajoStock = inventario.filter(i => {
         if (!i.minimo) return false
-        const cantidadBase = aUnidadBase(i.cantidad, i.unidad)
-        const minimoBase   = aUnidadBase(i.minimo,   i.unidad)
-        return cantidadBase <= minimoBase
+        const cantidadEnGramos = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
+        return cantidadEnGramos <= parsearNumero(i.minimo)
     })
 
     const itemsFiltrados = inventario.filter(i =>
@@ -59,6 +67,10 @@ export function useInventario() {
     const guardar = async () => {
         if (!form.nombre || !form.cantidadPaquetes || !form.tamañoPaquete) return
 
+        const cantidadTotal = numPaquetes * numTamaño
+        const cantidadBase = aGramos(cantidadTotal, form.unidad)
+        const costoPorGramo = cantidadBase > 0 ? (numPaquetes * numCosto) / cantidadBase : 0
+
         const datos = {
             nombre: form.nombre,
             tipo: form.tipo || "ingrediente",
@@ -67,8 +79,10 @@ export function useInventario() {
             unidad: form.unidad,
             costoPorPaquete: numCosto,
             minimo: numMinimo || "",
-            cantidad: numPaquetes * numTamaño,
+            cantidad: cantidadTotal,
+            cantidadBase,
             costoTotal: numPaquetes * numCosto,
+            costoPorGramo,
         }
 
         try {
