@@ -183,14 +183,15 @@ export default function Perfil() {
         display: "block", marginBottom: 6,
     }
 
-    const avatarSrc = usuario?.fotoGoogle || avatarPreview || null
+    // ✅ fotoGoogle → avatarBase64 de MongoDB → avatarPreview local → null
+    const avatarSrc = usuario?.fotoGoogle || usuario?.avatarBase64 || avatarPreview || null
     const inicialFallback = usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"
 
     const stack = [
-        { icon: "⚛️", nombre: "React + Vite",     desc: "Interfaz de usuario" },
-        { icon: "🟢", nombre: "Node.js",           desc: "Backend serverless" },
-        { icon: "🍃", nombre: "MongoDB + Mongoose",desc: "Base de datos" },
-        { icon: "▲",  nombre: "Vercel",            desc: "Deploy en la nube" },
+        { icon: "⚛️", nombre: "React + Vite",      desc: "Interfaz de usuario" },
+        { icon: "🟢", nombre: "Node.js",            desc: "Backend serverless" },
+        { icon: "🍃", nombre: "MongoDB + Mongoose", desc: "Base de datos" },
+        { icon: "▲",  nombre: "Vercel",             desc: "Deploy en la nube" },
         { icon: "🔐", nombre: "JWT + Google OAuth", desc: "Autenticación" },
     ]
 
@@ -393,8 +394,6 @@ export default function Perfil() {
                 {/* ── Sección: Créditos ── */}
                 {seccion === "creditos" && (
                     <div style={{ background: colorCard, borderRadius: 20, padding: 28, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: `1px solid ${colorBorde}` }}>
-
-                        {/* Header créditos */}
                         <div style={{ textAlign: "center", marginBottom: 28 }}>
                             <div style={{ fontSize: 48, marginBottom: 8 }}>✨</div>
                             <h3 style={{ margin: "0 0 6px", fontSize: 22, color: colorAcento }}>Emprende App</h3>
@@ -403,8 +402,7 @@ export default function Perfil() {
                                 background: esNoche ? "#1e293b" : "#e8f8f5",
                                 border: `1px solid ${colorAcento}`,
                                 borderRadius: 20, padding: "4px 14px",
-                                fontSize: 12, fontWeight: 700, color: colorAcento,
-                                marginBottom: 12,
+                                fontSize: 12, fontWeight: 700, color: colorAcento, marginBottom: 12,
                             }}>v1.0.0 Beta</div>
                             <p style={{ fontSize: 14, color: colorSuave, margin: 0 }}>
                                 Desarrollado con ❤️ para emprendedoras
@@ -428,20 +426,14 @@ export default function Perfil() {
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, fontSize: 16, color: colorTexto }}>Yuliana</div>
                                 <div style={{ fontSize: 12, color: colorSuave, marginBottom: 8 }}>Desarrolladora Full Stack</div>
-                                <a
-                                    href="https://github.com/YulsICV"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        display: "inline-flex", alignItems: "center", gap: 6,
-                                        background: esNoche ? "#1e293b" : "#fff",
-                                        border: `1.5px solid ${colorBorde}`,
-                                        borderRadius: 8, padding: "5px 12px",
-                                        fontSize: 12, fontWeight: 600,
-                                        color: colorTexto, textDecoration: "none",
-                                        transition: "border-color 0.2s",
-                                    }}
-                                >
+                                <a href="https://github.com/YulsICV" target="_blank" rel="noopener noreferrer" style={{
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                    background: esNoche ? "#1e293b" : "#fff",
+                                    border: `1.5px solid ${colorBorde}`,
+                                    borderRadius: 8, padding: "5px 12px",
+                                    fontSize: 12, fontWeight: 600,
+                                    color: colorTexto, textDecoration: "none",
+                                }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
                                     </svg>
@@ -450,7 +442,7 @@ export default function Perfil() {
                             </div>
                         </div>
 
-                        {/* Stack tecnológico */}
+                        {/* Stack */}
                         <div style={{ marginBottom: 20 }}>
                             <div style={{ fontSize: 11, fontWeight: 700, color: colorSuave, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>
                                 🛠 Stack tecnológico
@@ -473,7 +465,6 @@ export default function Perfil() {
                             </div>
                         </div>
 
-                        {/* Footer créditos */}
                         <div style={{
                             textAlign: "center", paddingTop: 16,
                             borderTop: `1px solid ${colorBorde}`,
