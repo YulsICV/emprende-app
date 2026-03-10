@@ -25,10 +25,8 @@ function formatearFecha(fecha) {
     return fecha.toLocaleDateString("es-CR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 }
 
-// ✅ Comprime una imagen base64 a máximo maxSize px y calidad dada
 function comprimirImagen(base64, maxSize = 400, calidad = 0.7) {
     return new Promise((resolve) => {
-        // Si no es base64 nueva (ya es URL http o null), no comprimir
         if (!base64 || base64.startsWith("http")) { resolve(base64); return }
         const img = new Image()
         img.onload = () => {
@@ -41,7 +39,7 @@ function comprimirImagen(base64, maxSize = 400, calidad = 0.7) {
             canvas.getContext("2d").drawImage(img, 0, 0, w, h)
             resolve(canvas.toDataURL("image/jpeg", calidad))
         }
-        img.onerror = () => resolve(base64) // si falla, usar original
+        img.onerror = () => resolve(base64)
         img.src = base64
     })
 }
@@ -62,7 +60,6 @@ export default function Perfil() {
     const [logoPreview, setLogoPreview] = useState(usuario?.logoBase64 || null)
     const [avatarPreview, setAvatarPreview] = useState(usuario?.avatarBase64 || null)
 
-    // Sincroniza todo cuando el contexto cambia
     useEffect(() => {
         if (!usuario) return
         setForm(prev => ({
@@ -112,12 +109,10 @@ export default function Perfil() {
         }
         setGuardando(true)
         try {
-            // ✅ Comprimir imágenes ANTES de enviar (400px avatar, 300px logo)
             const [avatarFinal, logoFinal] = await Promise.all([
                 comprimirImagen(avatarPreview, 400, 0.75),
                 comprimirImagen(logoPreview, 300, 0.80),
             ])
-
             const token = localStorage.getItem("token")
             const res = await fetch("/api/usuario", {
                 method: "PUT",
@@ -188,9 +183,16 @@ export default function Perfil() {
         display: "block", marginBottom: 6,
     }
 
-    // Avatar: fotoGoogle → avatarBase64 → inicial
     const avatarSrc = usuario?.fotoGoogle || avatarPreview || null
     const inicialFallback = usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"
+
+    const stack = [
+        { icon: "⚛️", nombre: "React + Vite",     desc: "Interfaz de usuario" },
+        { icon: "🟢", nombre: "Node.js",           desc: "Backend serverless" },
+        { icon: "🍃", nombre: "MongoDB + Mongoose",desc: "Base de datos" },
+        { icon: "▲",  nombre: "Vercel",            desc: "Deploy en la nube" },
+        { icon: "🔐", nombre: "JWT + Google OAuth", desc: "Autenticación" },
+    ]
 
     return (
         <div style={{ minHeight: "100vh", background: fondo, padding: "32px 16px", transition: "background 1s" }}>
@@ -214,16 +216,17 @@ export default function Perfil() {
                 </div>
 
                 {/* ── Tabs ── */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
                     {[
-                        { id: "perfil", label: "👤 Mi perfil" },
-                        { id: "negocio", label: "🏪 Mi negocio" },
+                        { id: "perfil",    label: "👤 Mi perfil" },
+                        { id: "negocio",   label: "🏪 Mi negocio" },
                         { id: "seguridad", label: "🔒 Seguridad" },
-                        { id: "cuenta", label: "⚠️ Cuenta" },
+                        { id: "creditos",  label: "✨ Créditos" },
+                        { id: "cuenta",    label: "⚠️ Cuenta" },
                     ].map(tab => (
                         <button key={tab.id} type="button" onClick={() => setSeccion(tab.id)} style={{
-                            flex: 1, padding: "10px 8px", borderRadius: 12, border: "none",
-                            cursor: "pointer", fontSize: 12, fontWeight: 600,
+                            flex: 1, minWidth: 80, padding: "10px 8px", borderRadius: 12, border: "none",
+                            cursor: "pointer", fontSize: 11.5, fontWeight: 600,
                             background: seccion === tab.id ? colorAcento : colorCard,
                             color: seccion === tab.id ? "#fff" : colorSuave,
                             boxShadow: seccion === tab.id ? "0 2px 12px rgba(26,158,135,0.3)" : "none",
@@ -248,16 +251,13 @@ export default function Perfil() {
                 {seccion === "perfil" && (
                     <div style={{ background: colorCard, borderRadius: 20, padding: 28, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: `1px solid ${colorBorde}` }}>
                         <h3 style={{ margin: "0 0 20px", color: colorTexto }}>👤 Mi perfil</h3>
-
-                        {/* Avatar con botón 📷 */}
                         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
                             <div style={{ position: "relative", flexShrink: 0 }}>
                                 <div style={{
                                     width: 80, height: 80, borderRadius: "50%",
                                     background: colorAcento, display: "flex", alignItems: "center",
                                     justifyContent: "center", fontSize: 30, fontWeight: 700,
-                                    color: "#fff", overflow: "hidden",
-                                    border: `3px solid ${colorAcento}`,
+                                    color: "#fff", overflow: "hidden", border: `3px solid ${colorAcento}`,
                                 }}>
                                     {avatarSrc
                                         ? <img src={avatarSrc} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -290,7 +290,6 @@ export default function Perfil() {
                                 }
                             </div>
                         </div>
-
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <div>
                                 <span style={labelStyle}>Nombre completo</span>
@@ -305,7 +304,7 @@ export default function Perfil() {
                             marginTop: 20, padding: "12px 28px", borderRadius: 12, border: "none",
                             background: colorAcento, color: "#fff", fontSize: 14, fontWeight: 600,
                             cursor: guardando ? "not-allowed" : "pointer", opacity: guardando ? 0.7 : 1,
-                        }}>{guardando ? "Comprimiendo y guardando..." : "💾 Guardar cambios"}</button>
+                        }}>{guardando ? "Guardando..." : "💾 Guardar cambios"}</button>
                     </div>
                 )}
 
@@ -355,7 +354,7 @@ export default function Perfil() {
                             marginTop: 20, padding: "12px 28px", borderRadius: 12, border: "none",
                             background: colorAcento, color: "#fff", fontSize: 14, fontWeight: 600,
                             cursor: guardando ? "not-allowed" : "pointer", opacity: guardando ? 0.7 : 1,
-                        }}>{guardando ? "Comprimiendo y guardando..." : "💾 Guardar cambios"}</button>
+                        }}>{guardando ? "Guardando..." : "💾 Guardar cambios"}</button>
                     </div>
                 )}
 
@@ -388,6 +387,100 @@ export default function Perfil() {
                             cursor: (guardando || !form.passwordActual || !form.passwordNueva) ? "not-allowed" : "pointer",
                             opacity: (guardando || !form.passwordActual || !form.passwordNueva) ? 0.6 : 1,
                         }}>{guardando ? "Guardando..." : "🔒 Cambiar contraseña"}</button>
+                    </div>
+                )}
+
+                {/* ── Sección: Créditos ── */}
+                {seccion === "creditos" && (
+                    <div style={{ background: colorCard, borderRadius: 20, padding: 28, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: `1px solid ${colorBorde}` }}>
+
+                        {/* Header créditos */}
+                        <div style={{ textAlign: "center", marginBottom: 28 }}>
+                            <div style={{ fontSize: 48, marginBottom: 8 }}>✨</div>
+                            <h3 style={{ margin: "0 0 6px", fontSize: 22, color: colorAcento }}>Emprende App</h3>
+                            <div style={{
+                                display: "inline-block",
+                                background: esNoche ? "#1e293b" : "#e8f8f5",
+                                border: `1px solid ${colorAcento}`,
+                                borderRadius: 20, padding: "4px 14px",
+                                fontSize: 12, fontWeight: 700, color: colorAcento,
+                                marginBottom: 12,
+                            }}>v1.0.0 Beta</div>
+                            <p style={{ fontSize: 14, color: colorSuave, margin: 0 }}>
+                                Desarrollado con ❤️ para emprendedoras
+                            </p>
+                        </div>
+
+                        {/* Desarrolladora */}
+                        <div style={{
+                            background: esNoche ? "#0f172a" : "#f0fdf9",
+                            border: `1.5px solid ${colorAcento}`,
+                            borderRadius: 16, padding: "20px 24px",
+                            marginBottom: 20, display: "flex",
+                            alignItems: "center", gap: 16,
+                        }}>
+                            <div style={{
+                                width: 52, height: 52, borderRadius: "50%",
+                                background: `linear-gradient(135deg, ${colorAcento}, #2ec4a9)`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 22, fontWeight: 700, color: "#fff", flexShrink: 0,
+                            }}>Y</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, fontSize: 16, color: colorTexto }}>Yuliana</div>
+                                <div style={{ fontSize: 12, color: colorSuave, marginBottom: 8 }}>Desarrolladora Full Stack</div>
+                                <a
+                                    href="https://github.com/YulsICV"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: "inline-flex", alignItems: "center", gap: 6,
+                                        background: esNoche ? "#1e293b" : "#fff",
+                                        border: `1.5px solid ${colorBorde}`,
+                                        borderRadius: 8, padding: "5px 12px",
+                                        fontSize: 12, fontWeight: 600,
+                                        color: colorTexto, textDecoration: "none",
+                                        transition: "border-color 0.2s",
+                                    }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                                    </svg>
+                                    YulsICV
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Stack tecnológico */}
+                        <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: colorSuave, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>
+                                🛠 Stack tecnológico
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {stack.map((item, i) => (
+                                    <div key={i} style={{
+                                        display: "flex", alignItems: "center", gap: 12,
+                                        background: esNoche ? "#0f172a" : "#f8fafc",
+                                        border: `1px solid ${colorBorde}`,
+                                        borderRadius: 10, padding: "10px 14px",
+                                    }}>
+                                        <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
+                                        <div>
+                                            <div style={{ fontSize: 13, fontWeight: 700, color: colorTexto }}>{item.nombre}</div>
+                                            <div style={{ fontSize: 11, color: colorSuave }}>{item.desc}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer créditos */}
+                        <div style={{
+                            textAlign: "center", paddingTop: 16,
+                            borderTop: `1px solid ${colorBorde}`,
+                            fontSize: 12, color: colorSuave,
+                        }}>
+                            © {new Date().getFullYear()} Emprende App — Todos los derechos reservados
+                        </div>
                     </div>
                 )}
 
