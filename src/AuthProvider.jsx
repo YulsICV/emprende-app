@@ -6,9 +6,7 @@ export function AuthProvider({ children }) {
         try {
             const saved = localStorage.getItem("usuario")
             return saved ? JSON.parse(saved) : null
-        } catch {
-            return null
-        }
+        } catch { return null }
     })
 
     const login = (token, datosUsuario) => {

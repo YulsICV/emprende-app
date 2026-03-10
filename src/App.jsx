@@ -11,10 +11,11 @@ import Reportes from "./pages/Reportes"
 import Produccion from "./pages/Produccion"
 import Recetario from "./pages/Recetario"
 import LoginPage from "./pages/LoginPage"
+import Perfil from "./pages/Perfil"
 import "./App.css"
 import "./styles/components.css"
 
-const MODULOS = ["Recetas", "Recetario", "Produccion", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes"]
+const MODULOS = ["Recetas", "Recetario", "Produccion", "Inventario", "Pedidos", "Ventas", "Clientes", "Reportes", "Perfil"]
 
 export default function App() {
     const { usuario, logout } = useAuth()
@@ -66,14 +67,15 @@ export default function App() {
             </header>
 
             <main className="app-contenido">
-                {activo === "Recetas"    && <Recetas    db={db} actualizarDb={actualizarDb} />}
-                {activo === "Recetario"  && <Recetario  db={db} actualizarDb={actualizarDb} />}
+                {activo === "Recetas" && <Recetas db={db} actualizarDb={actualizarDb} />}
+                {activo === "Recetario" && <Recetario db={db} actualizarDb={actualizarDb} />}
                 {activo === "Produccion" && <Produccion db={db} actualizarDb={actualizarDb} />}
                 {activo === "Inventario" && <Inventario db={db} actualizarDb={actualizarDb} />}
-                {activo === "Pedidos"    && <Pedidos    db={db} actualizarDb={actualizarDb} />}
-                {activo === "Ventas"     && <Ventas     db={db} actualizarDb={actualizarDb} />}
-                {activo === "Clientes"   && <Clientes   db={db} actualizarDb={actualizarDb} />}
-                {activo === "Reportes"   && <Reportes   db={db} actualizarDb={actualizarDb} />}
+                {activo === "Pedidos" && <Pedidos db={db} actualizarDb={actualizarDb} />}
+                {activo === "Ventas" && <Ventas db={db} actualizarDb={actualizarDb} />}
+                {activo === "Clientes" && <Clientes db={db} actualizarDb={actualizarDb} />}
+                {activo === "Reportes" && <Reportes db={db} actualizarDb={actualizarDb} />}
+                {activo === "Perfil" && <Perfil />}
             </main>
         </div>
     )

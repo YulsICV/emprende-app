@@ -72,6 +72,7 @@ const usuarioSchema = new mongoose.Schema({
     passwordHash:  { type: String },
     googleId:      { type: String, sparse: true },
     fotoGoogle:    { type: String },
+    logoBase64: { type: String },
     nombre:        { type: String, default: "" },
     inicial:       { type: String, default: "" },
     resetToken:       { type: String },
