@@ -33,6 +33,21 @@ function generarToken(usuario) {
     )
 }
 
+// ✅ Función helper para armar el objeto usuario completo siempre igual
+function usuarioPublico(u) {
+    return {
+        id:            u._id,
+        negocioId:     u.negocioId,
+        email:         u.email,
+        nombre:        u.nombre,
+        inicial:       u.inicial,
+        nombreNegocio: u.nombreNegocio,
+        fotoGoogle:    u.fotoGoogle   || null,
+        logoBase64:    u.logoBase64   || null,
+        avatarBase64:  u.avatarBase64 || null,
+    }
+}
+
 export default async function handler(req, res) {
     try {
     await connectDB()
@@ -61,17 +76,7 @@ export default async function handler(req, res) {
             negocioId: _id.toString(),
         })
         const token = generarToken(usuario)
-        return res.status(201).json({
-            token,
-            usuario: {
-                id:           usuario._id,
-                negocioId:    usuario.negocioId,
-                email:        usuario.email,
-                nombre:       usuario.nombre,
-                inicial:      usuario.inicial,
-                nombreNegocio:usuario.nombreNegocio,
-            }
-        })
+        return res.status(201).json({ token, usuario: usuarioPublico(usuario) })
     }
 
     // ══ LOGIN ══
@@ -89,17 +94,7 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: "Email o contraseña incorrectos." })
         }
         const token = generarToken(usuario)
-        return res.status(200).json({
-            token,
-            usuario: {
-                id:           usuario._id,
-                negocioId:    usuario.negocioId,
-                email:        usuario.email,
-                nombre:       usuario.nombre,
-                inicial:      usuario.inicial,
-                nombreNegocio:usuario.nombreNegocio,
-            }
-        })
+        return res.status(200).json({ token, usuario: usuarioPublico(usuario) })
     }
 
     // ══ GOOGLE LOGIN ══
@@ -138,25 +133,13 @@ export default async function handler(req, res) {
                 negocioId:    _id.toString(),
             })
         } else if (!usuario.googleId) {
-            // Ya tenía cuenta con email — vincular Google
             usuario.googleId   = googleId
             usuario.fotoGoogle = picture
             await usuario.save()
         }
 
         const token = generarToken(usuario)
-        return res.status(200).json({
-            token,
-            usuario: {
-                id:           usuario._id,
-                negocioId:    usuario.negocioId,
-                email:        usuario.email,
-                nombre:       usuario.nombre,
-                inicial:      usuario.inicial,
-                nombreNegocio:usuario.nombreNegocio,
-                fotoGoogle:   usuario.fotoGoogle,
-            }
-        })
+        return res.status(200).json({ token, usuario: usuarioPublico(usuario) })
     }
 
     // ══ OLVIDÉ CONTRASEÑA ══
@@ -165,7 +148,6 @@ export default async function handler(req, res) {
         if (!email) return res.status(400).json({ error: "Email requerido." })
 
         const usuario = await Usuario.findOne({ email: email.toLowerCase().trim() })
-        // Siempre responder OK para no revelar si el email existe
         if (!usuario) {
             return res.status(200).json({ ok: true })
         }
