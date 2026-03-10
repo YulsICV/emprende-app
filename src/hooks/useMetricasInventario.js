@@ -6,12 +6,10 @@ export function useMetricasInventario(db) {
     const pedidos    = useMemo(() => db.pedidos    || [], [db.pedidos])
     const recetas    = useMemo(() => db.recetas    || [], [db.recetas])
 
+    // FIX: era (costoTotal / cantidad) * cantidad = costoTotal, simplificado directo
     const valorInventarioActual = useMemo(() =>
-        inventario.reduce((s, i) => {
-            if (!i.costoTotal || !i.cantidad) return s
-            const costoPorUnidad = parsearNumero(i.costoTotal) / parsearNumero(i.cantidad)
-            return s + costoPorUnidad * parsearNumero(i.cantidad)
-        }, 0), [inventario]
+        inventario.reduce((s, i) => s + parsearNumero(i.costoTotal), 0),
+        [inventario]
     )
 
     const totalInvertido = useMemo(() =>

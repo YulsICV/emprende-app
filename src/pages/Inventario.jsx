@@ -24,7 +24,9 @@ export default function Inventario({ db }) {
         eliminar,
     } = useInventario()
 
-    const metricas = useMetricasInventario(db)
+    // FIX: inyectar inventario real de MongoDB en db antes de pasarlo a métricas
+    const dbConInventario = { ...db, inventario }
+    const metricas = useMetricasInventario(dbConInventario)
 
     if (cargando) return (
         <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>

@@ -12,6 +12,16 @@ const FORM_INICIAL = {
     tipo: "ingrediente"
 }
 
+// FIX: convierte a unidad base para comparar correctamente kg vs g, L vs ml
+function aUnidadBase(cantidad, unidad) {
+    const n = parsearNumero(cantidad)
+    switch (unidad) {
+        case "kg": return n * 1000
+        case "L":  return n * 1000
+        default:   return n
+    }
+}
+
 export function useInventario() {
     const [form, setForm] = useState(FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
@@ -20,7 +30,6 @@ export function useInventario() {
     const [inventario, setInventario] = useState([])
     const [cargando, setCargando] = useState(true)
 
-    // ── Cargar inventario desde MongoDB al montar ──
     useEffect(() => {
         apiInventario.getAll()
             .then(data => setInventario(Array.isArray(data) ? data : []))
@@ -35,14 +44,18 @@ export function useInventario() {
     const totalInventario = numPaquetes * numTamaño
     const costoTotal      = numPaquetes * numCosto
 
-    const bajoStock = inventario.filter(i =>
-        i.minimo && parsearNumero(i.cantidad) <= parsearNumero(i.minimo)
-    )
+    // FIX: comparar en unidad base para que 1kg vs 500g funcione correctamente
+    const bajoStock = inventario.filter(i => {
+        if (!i.minimo) return false
+        const cantidadBase = aUnidadBase(i.cantidad, i.unidad)
+        const minimoBase   = aUnidadBase(i.minimo,   i.unidad)
+        return cantidadBase <= minimoBase
+    })
+
     const itemsFiltrados = inventario.filter(i =>
         i.nombre.toLowerCase().includes(busqueda.toLowerCase())
     )
 
-    // ── GUARDAR (crear o actualizar) ──
     const guardar = async () => {
         if (!form.nombre || !form.cantidadPaquetes || !form.tamañoPaquete) return
 
