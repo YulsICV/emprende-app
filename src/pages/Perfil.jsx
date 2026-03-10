@@ -25,6 +25,27 @@ function formatearFecha(fecha) {
     return fecha.toLocaleDateString("es-CR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 }
 
+// ✅ Comprime una imagen base64 a máximo maxSize px y calidad dada
+function comprimirImagen(base64, maxSize = 400, calidad = 0.7) {
+    return new Promise((resolve) => {
+        // Si no es base64 nueva (ya es URL http o null), no comprimir
+        if (!base64 || base64.startsWith("http")) { resolve(base64); return }
+        const img = new Image()
+        img.onload = () => {
+            const canvas = document.createElement("canvas")
+            let w = img.width, h = img.height
+            if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize } }
+            else        { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize } }
+            canvas.width = w
+            canvas.height = h
+            canvas.getContext("2d").drawImage(img, 0, 0, w, h)
+            resolve(canvas.toDataURL("image/jpeg", calidad))
+        }
+        img.onerror = () => resolve(base64) // si falla, usar original
+        img.src = base64
+    })
+}
+
 export default function Perfil() {
     const { usuario, login, logout } = useAuth()
     const ahora = useReloj()
@@ -91,6 +112,12 @@ export default function Perfil() {
         }
         setGuardando(true)
         try {
+            // ✅ Comprimir imágenes ANTES de enviar (400px avatar, 300px logo)
+            const [avatarFinal, logoFinal] = await Promise.all([
+                comprimirImagen(avatarPreview, 400, 0.75),
+                comprimirImagen(logoPreview, 300, 0.80),
+            ])
+
             const token = localStorage.getItem("token")
             const res = await fetch("/api/usuario", {
                 method: "PUT",
@@ -101,8 +128,8 @@ export default function Perfil() {
                     email: form.email,
                     passwordActual: form.passwordActual || undefined,
                     passwordNueva: form.passwordNueva || undefined,
-                    logoBase64: logoPreview,
-                    avatarBase64: avatarPreview,
+                    logoBase64: logoFinal,
+                    avatarBase64: avatarFinal,
                 })
             })
             const data = await res.json()
@@ -161,7 +188,7 @@ export default function Perfil() {
         display: "block", marginBottom: 6,
     }
 
-    // Lógica del avatar: fotoGoogle → avatarBase64 → inicial
+    // Avatar: fotoGoogle → avatarBase64 → inicial
     const avatarSrc = usuario?.fotoGoogle || avatarPreview || null
     const inicialFallback = usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"
 
@@ -222,7 +249,7 @@ export default function Perfil() {
                     <div style={{ background: colorCard, borderRadius: 20, padding: 28, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: `1px solid ${colorBorde}` }}>
                         <h3 style={{ margin: "0 0 20px", color: colorTexto }}>👤 Mi perfil</h3>
 
-                        {/* Avatar con botón de cambiar foto */}
+                        {/* Avatar con botón 📷 */}
                         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
                             <div style={{ position: "relative", flexShrink: 0 }}>
                                 <div style={{
@@ -236,7 +263,6 @@ export default function Perfil() {
                                         ? <img src={avatarSrc} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                         : inicialFallback}
                                 </div>
-                                {/* Botón 📷 solo si no usa Google */}
                                 {!usuario?.fotoGoogle && (
                                     <label style={{
                                         position: "absolute", bottom: 0, right: 0,
@@ -279,7 +305,7 @@ export default function Perfil() {
                             marginTop: 20, padding: "12px 28px", borderRadius: 12, border: "none",
                             background: colorAcento, color: "#fff", fontSize: 14, fontWeight: 600,
                             cursor: guardando ? "not-allowed" : "pointer", opacity: guardando ? 0.7 : 1,
-                        }}>{guardando ? "Guardando..." : "💾 Guardar cambios"}</button>
+                        }}>{guardando ? "Comprimiendo y guardando..." : "💾 Guardar cambios"}</button>
                     </div>
                 )}
 
@@ -329,7 +355,7 @@ export default function Perfil() {
                             marginTop: 20, padding: "12px 28px", borderRadius: 12, border: "none",
                             background: colorAcento, color: "#fff", fontSize: 14, fontWeight: 600,
                             cursor: guardando ? "not-allowed" : "pointer", opacity: guardando ? 0.7 : 1,
-                        }}>{guardando ? "Guardando..." : "💾 Guardar cambios"}</button>
+                        }}>{guardando ? "Comprimiendo y guardando..." : "💾 Guardar cambios"}</button>
                     </div>
                 )}
 
