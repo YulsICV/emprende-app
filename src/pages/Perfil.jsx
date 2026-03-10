@@ -39,6 +39,19 @@ export default function Perfil() {
         passwordConfirm: "",
     })
     const [logoPreview, setLogoPreview] = useState(usuario?.logoBase64 || null)
+
+    // ✅ FIX: sincroniza form y logoPreview cada vez que el contexto se actualiza
+    useEffect(() => {
+        if (!usuario) return
+        setForm(prev => ({
+            ...prev,
+            nombre: usuario.nombre || "",
+            nombreNegocio: usuario.nombreNegocio || "",
+            email: usuario.email || "",
+        }))
+        setLogoPreview(usuario.logoBase64 || null)
+    }, [usuario])
+
     const [guardando, setGuardando] = useState(false)
     const [mensaje, setMensaje] = useState(null)
     const [error, setError] = useState(null)
@@ -202,7 +215,7 @@ export default function Perfil() {
                             }}>
                                 {usuario?.fotoGoogle
                                     ? <img src={usuario.fotoGoogle} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    : usuario?.inicial}
+                                    : usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"}
                             </div>
                             <div>
                                 <div style={{ fontWeight: 700, fontSize: 18, color: colorTexto }}>{usuario?.nombre}</div>
