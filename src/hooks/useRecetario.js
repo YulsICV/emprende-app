@@ -40,11 +40,13 @@ export function useRecetario() {
             setRecetas(Array.isArray(recs) ? recs : [])
             setInventario(Array.isArray(inv) ? inv : [])
         }).catch(err => console.error("Error cargando recetario:", err))
-        .finally(() => setCargando(false))
+            .finally(() => setCargando(false))
     }, [])
 
     const guardarReceta = async (form, editando) => {
         if (!form.nombre.trim()) return
+        console.log("🔍 editando:", editando)  // ← agregar esto
+        console.log("🔍 recetaCostoId:", editando?.recetaCostoId)
 
         // Datos limpios para recetario (sin costos)
         const datosRecetario = {
