@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useRecetas } from "../hooks/useRecetas"
 import FormularioRecetas from "../components/recetas/FormularioRecetas"
 import FormularioIngrediente from "../components/recetas/FormularioIngrediente"
@@ -20,7 +21,7 @@ export default function Recetas() {
         insumoForm, setInsumoForm,
         editandoId, setEditandoId,
         recetasCostos,
-        recetario,          // FIX: antes no se desestructuraba
+        recetario,
         inventario,
         cargando,
         costoIngredientes,
@@ -39,7 +40,13 @@ export default function Recetas() {
         eliminarInsumo,
         editarInsumo,
         agregarAInventario,
+        recargar,
     } = useRecetas()
+
+    // ← Recarga datos frescos cada vez que se entra al módulo
+    useEffect(() => {
+        recargar()
+    }, [])
 
     if (cargando) return (
         <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>
@@ -54,7 +61,7 @@ export default function Recetas() {
             <FormularioRecetas
                 form={form}
                 setForm={setForm}
-                recetario={recetario}       // FIX: antes era recetasCostos, ahora es recetario
+                recetario={recetario}
                 onJalarReceta={editarReceta}
                 precioMayoreo={precioMayoreo}
                 precioMenudeo={precioMenudeo}

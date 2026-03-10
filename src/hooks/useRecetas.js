@@ -25,8 +25,7 @@ function calcularCostoParcial(item, CONVERSIONES) {
     const enGramosUso = CONVERSIONES[item.unidadUso]
     const enGramosPaquete = CONVERSIONES[item.unidadPaquete]
     let costo
-    if (enGramosUso === null || enGramosPaquete === null ||
-        enGramosUso === undefined || enGramosPaquete === undefined) {
+    if (enGramosUso == null || enGramosPaquete == null) {
         costo = (precioPaquete / cantidadPaquete) * cantidadUso
     } else {
         const usoEnGramos = cantidadUso * enGramosUso
@@ -64,7 +63,6 @@ function enriquecerIngrediente(ing, inventario) {
     }
 }
 
-// Versión limpia para recetario: solo preparación, sin costos ni insumos
 function construirEntradaRecetario(form, recetaCostoId) {
     return {
         nombre: form.nombre,
@@ -96,18 +94,27 @@ export function useRecetas() {
     const [inventario, setInventario] = useState([])
     const [cargando, setCargando] = useState(true)
 
-    useEffect(() => {
-        Promise.all([
-            apiRecetas.getAll(),
-            apiInventario.getAll(),
-            apiRecetario.getAll(),
-        ]).then(([recetas, inv, recetarioData]) => {
+    const recargar = useCallback(async () => {
+        setCargando(true)
+        try {
+            const [recetas, inv, recetarioData] = await Promise.all([
+                apiRecetas.getAll(),
+                apiInventario.getAll(),
+                apiRecetario.getAll(),
+            ])
             setRecetasCostos(Array.isArray(recetas) ? recetas : [])
             setInventario(Array.isArray(inv) ? inv : [])
             setRecetario(Array.isArray(recetarioData) ? recetarioData : [])
-        }).catch(err => console.error("Error cargando datos:", err))
-        .finally(() => setCargando(false))
+        } catch (err) {
+            console.error("Error recargando:", err)
+        } finally {
+            setCargando(false)
+        }
     }, [])
+
+    useEffect(() => {
+        recargar()
+    }, [recargar])
 
     // ── Cálculos ──
     const costoIngredientes = form.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
@@ -173,7 +180,6 @@ export function useRecetas() {
                     r._id === editandoId ? { ...r, recetarioId: nuevaEntrada._id } : r
                 ))
             }
-
             setEditandoId(null)
         } else {
             const nueva = await apiRecetas.crear(datos)
@@ -313,5 +319,6 @@ export function useRecetas() {
         eliminarInsumo,
         editarInsumo,
         agregarAInventario,
+        recargar,
     }
 }
