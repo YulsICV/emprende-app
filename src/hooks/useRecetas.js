@@ -25,7 +25,8 @@ function calcularCostoParcial(item, CONVERSIONES) {
     const enGramosUso = CONVERSIONES[item.unidadUso]
     const enGramosPaquete = CONVERSIONES[item.unidadPaquete]
     let costo
-    if (enGramosUso === null || enGramosPaquete === null || enGramosUso === undefined || enGramosPaquete === undefined) {
+    if (enGramosUso === null || enGramosPaquete === null ||
+        enGramosUso === undefined || enGramosPaquete === undefined) {
         costo = (precioPaquete / cantidadPaquete) * cantidadUso
     } else {
         const usoEnGramos = cantidadUso * enGramosUso
@@ -63,13 +64,12 @@ function enriquecerIngrediente(ing, inventario) {
     }
 }
 
-// Versión limpia para recetario: solo nombre, pasos, ingredientes sin costos
+// Versión limpia para recetario: solo preparación, sin costos ni insumos
 function construirEntradaRecetario(form, recetaCostoId) {
     return {
         nombre: form.nombre,
         categoria: form.categoria,
         unidades: form.unidades,
-        envioGratis: form.envioGratis,
         fotoBase64: form.fotoBase64 || "",
         fotoUrl: form.fotoUrl || "",
         equipo: form.equipo || "",
@@ -77,11 +77,6 @@ function construirEntradaRecetario(form, recetaCostoId) {
         tiempoCoccion: form.tiempoCoccion || "",
         pasos: form.pasos || [],
         ingredientes: (form.ingredientes || []).map(i => ({
-            nombre: i.nombre,
-            cantidadUso: i.cantidadUso,
-            unidadUso: i.unidadUso,
-        })),
-        insumos: (form.insumos || []).map(i => ({
             nombre: i.nombre,
             cantidadUso: i.cantidadUso,
             unidadUso: i.unidadUso,
@@ -118,7 +113,8 @@ export function useRecetas() {
     const costoIngredientes = form.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
     const costoInsumos = (form.insumos || []).reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
     const costoTotal = costoIngredientes + costoInsumos
-    const costoPorUnidad = form.unidades > 0 ? costoTotal / form.unidades : 0
+    const unidades = parseFloat(form.unidades) || 0
+    const costoPorUnidad = unidades > 0 ? costoTotal / unidades : 0
     const precioMayoreo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMay / 100)) : 0
     const precioMenudeo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMen / 100)) : 0
 
@@ -153,26 +149,23 @@ export function useRecetas() {
 
         const datos = {
             ...form,
-            costoTotal,
-            costoPorUnidad,
-            precioMayoreo,
-            precioMenudeo,
+            unidades: parseFloat(form.unidades) || 0,
+            costoTotal: parseFloat(costoTotal.toFixed(2)),
+            costoPorUnidad: parseFloat(costoPorUnidad.toFixed(2)),
+            precioMayoreo: parseFloat(precioMayoreo),
+            precioMenudeo: parseFloat(precioMenudeo),
             fecha: new Date().toISOString()
         }
 
         if (editandoId) {
-            // Actualizar en Recetas & Costos
             const updated = await apiRecetas.actualizar({ ...datos, id: editandoId })
             setRecetasCostos(prev => prev.map(r => r._id === editandoId ? updated : r))
 
-            // Sincronizar recetario
             const entradaRecetario = construirEntradaRecetario(form, editandoId)
             if (form.recetarioId) {
-                // Ya existe — actualizar
                 const updatedRec = await apiRecetario.actualizar({ ...entradaRecetario, id: form.recetarioId })
                 setRecetario(prev => prev.map(r => r._id === form.recetarioId ? updatedRec : r))
             } else {
-                // No tenía vínculo — crear y vincular
                 const nuevaEntrada = await apiRecetario.crear(entradaRecetario)
                 setRecetario(prev => [nuevaEntrada, ...prev])
                 await apiRecetas.actualizar({ id: editandoId, recetarioId: nuevaEntrada._id })
@@ -183,16 +176,13 @@ export function useRecetas() {
 
             setEditandoId(null)
         } else {
-            // Crear en Recetas & Costos
             const nueva = await apiRecetas.crear(datos)
             setRecetasCostos(prev => [nueva, ...prev])
 
-            // Crear automáticamente en recetario (sin costos ni precios)
             const entradaRecetario = construirEntradaRecetario(form, nueva._id)
             const nuevaEntrada = await apiRecetario.crear(entradaRecetario)
             setRecetario(prev => [nuevaEntrada, ...prev])
 
-            // Guardar vínculo bidireccional
             await apiRecetas.actualizar({ id: nueva._id, recetarioId: nuevaEntrada._id })
             setRecetasCostos(prev => prev.map(r =>
                 r._id === nueva._id ? { ...r, recetarioId: nuevaEntrada._id } : r
@@ -204,13 +194,10 @@ export function useRecetas() {
 
     // ── Eliminar receta ──
     const eliminarReceta = async (id) => {
-        // id ya viene como _id desde ListaRecetas (corregido)
         const receta = recetasCostos.find(r => r._id === id)
-
         await apiRecetas.eliminar(id)
         setRecetasCostos(prev => prev.filter(r => r._id !== id))
 
-        // Eliminar entrada vinculada del recetario
         if (receta?.recetarioId) {
             await apiRecetario.eliminar(receta.recetarioId)
             setRecetario(prev => prev.filter(r => r._id !== receta.recetarioId))
@@ -220,10 +207,17 @@ export function useRecetas() {
     // ── Ingredientes ──
     const agregarIngrediente = () => {
         if (!ingForm.nombre || !ingForm.cantidadUso) return
-        const item = inventario.find(i => i.nombre.toLowerCase().trim() === ingForm.nombre.toLowerCase().trim())
+        const item = inventario.find(i =>
+            i.nombre.toLowerCase().trim() === ingForm.nombre.toLowerCase().trim()
+        )
         let ing = { ...ingForm, id: crypto.randomUUID() }
         if (item) {
-            ing = { ...ing, cantidadPaquete: item.tamañoPaquete || "", unidadPaquete: item.unidad || "g", precioPaquete: item.costoPorPaquete || "" }
+            ing = {
+                ...ing,
+                cantidadPaquete: item.tamañoPaquete || "",
+                unidadPaquete: item.unidad || "g",
+                precioPaquete: item.costoPorPaquete || ""
+            }
         }
         ing.costoParcial = calcularCostoParcial(ing, CONVERSIONES_A_GRAMOS).toFixed(1)
         setForm(prev => ({ ...prev, ingredientes: [...prev.ingredientes, ing] }))
@@ -235,7 +229,8 @@ export function useRecetas() {
 
     const editarIngrediente = (id, campo, valor) => {
         setForm(prev => ({
-            ...prev, ingredientes: prev.ingredientes.map(ing => {
+            ...prev,
+            ingredientes: prev.ingredientes.map(ing => {
                 if (ing.id !== id) return ing
                 const updated = { ...ing, [campo]: valor }
                 if (['cantidadUso', 'unidadUso', 'cantidadPaquete', 'unidadPaquete', 'precioPaquete'].includes(campo)) {
@@ -249,10 +244,17 @@ export function useRecetas() {
     // ── Insumos ──
     const agregarInsumo = () => {
         if (!insumoForm.nombre || !insumoForm.cantidadUso) return
-        const item = inventario.find(i => i.nombre.toLowerCase().trim() === insumoForm.nombre.toLowerCase().trim())
+        const item = inventario.find(i =>
+            i.nombre.toLowerCase().trim() === insumoForm.nombre.toLowerCase().trim()
+        )
         let ins = { ...insumoForm, id: crypto.randomUUID() }
         if (item) {
-            ins = { ...ins, cantidadPaquete: item.tamañoPaquete || "", unidadPaquete: item.unidad || "g", precioPaquete: item.costoPorPaquete || "" }
+            ins = {
+                ...ins,
+                cantidadPaquete: item.tamañoPaquete || "",
+                unidadPaquete: item.unidad || "g",
+                precioPaquete: item.costoPorPaquete || ""
+            }
         }
         ins.costoParcial = calcularCostoParcial(ins, CONVERSIONES_A_GRAMOS).toFixed(1)
         setForm(prev => ({ ...prev, insumos: [...(prev.insumos || []), ins] }))
@@ -264,7 +266,8 @@ export function useRecetas() {
 
     const editarInsumo = (id, campo, valor) => {
         setForm(prev => ({
-            ...prev, insumos: prev.insumos.map(ins => {
+            ...prev,
+            insumos: prev.insumos.map(ins => {
                 if (ins.id !== id) return ins
                 const updated = { ...ins, [campo]: valor }
                 if (['cantidadUso', 'unidadUso', 'cantidadPaquete', 'unidadPaquete', 'precioPaquete'].includes(campo)) {
@@ -277,7 +280,9 @@ export function useRecetas() {
 
     // ── Agregar a inventario ──
     const agregarAInventario = async (nuevoItem) => {
-        const yaExiste = inventario.some(i => i.nombre.toLowerCase().trim() === nuevoItem.nombre.toLowerCase().trim())
+        const yaExiste = inventario.some(i =>
+            i.nombre.toLowerCase().trim() === nuevoItem.nombre.toLowerCase().trim()
+        )
         if (yaExiste) return
         const creado = await apiInventario.crear(nuevoItem)
         setInventario(prev => [creado, ...prev])
