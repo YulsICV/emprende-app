@@ -38,7 +38,8 @@ export default async function handler(req, res) {
     // ── PUT: actualizar perfil ──
     if (req.method === "PUT") {
         try {
-            const { nombre, nombreNegocio, email, passwordActual, passwordNueva, logoBase64 } = req.body
+            // ✅ ahora también recibe avatarBase64
+            const { nombre, nombreNegocio, email, passwordActual, passwordNueva, logoBase64, avatarBase64 } = req.body
             const u = await Usuario.findById(usuario.id)
             if (!u) return res.status(404).json({ error: "Usuario no encontrado" })
 
@@ -57,6 +58,7 @@ export default async function handler(req, res) {
                 u.email = email.toLowerCase().trim()
             }
             if (logoBase64 !== undefined) u.logoBase64 = logoBase64
+            if (avatarBase64 !== undefined) u.avatarBase64 = avatarBase64  // ✅ NUEVO
 
             await u.save()
             const token = generarToken(u)
@@ -64,10 +66,15 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 token,
                 usuario: {
-                    id: u._id, negocioId: u.negocioId,
-                    email: u.email, nombre: u.nombre,
-                    inicial: u.inicial, nombreNegocio: u.nombreNegocio,
-                    fotoGoogle: u.fotoGoogle, logoBase64: u.logoBase64,
+                    id: u._id,
+                    negocioId: u.negocioId,
+                    email: u.email,
+                    nombre: u.nombre,
+                    inicial: u.inicial,
+                    nombreNegocio: u.nombreNegocio,
+                    fotoGoogle: u.fotoGoogle,
+                    logoBase64: u.logoBase64,
+                    avatarBase64: u.avatarBase64,   // ✅ NUEVO
                 }
             })
         } catch (err) {

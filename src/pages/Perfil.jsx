@@ -39,8 +39,9 @@ export default function Perfil() {
         passwordConfirm: "",
     })
     const [logoPreview, setLogoPreview] = useState(usuario?.logoBase64 || null)
+    const [avatarPreview, setAvatarPreview] = useState(usuario?.avatarBase64 || null)
 
-    // ✅ FIX: sincroniza form y logoPreview cada vez que el contexto se actualiza
+    // Sincroniza todo cuando el contexto cambia
     useEffect(() => {
         if (!usuario) return
         setForm(prev => ({
@@ -50,6 +51,7 @@ export default function Perfil() {
             email: usuario.email || "",
         }))
         setLogoPreview(usuario.logoBase64 || null)
+        setAvatarPreview(usuario.avatarBase64 || null)
     }, [usuario])
 
     const [guardando, setGuardando] = useState(false)
@@ -60,6 +62,7 @@ export default function Perfil() {
     const [textoConfirm, setTextoConfirm] = useState("")
     const [eliminando, setEliminando] = useState(false)
     const fileRef = useRef()
+    const avatarRef = useRef()
 
     const esNoche = new Date().getHours() >= 19 || new Date().getHours() < 5
 
@@ -68,6 +71,14 @@ export default function Perfil() {
         if (!file) return
         const reader = new FileReader()
         reader.onload = ev => setLogoPreview(ev.target.result)
+        reader.readAsDataURL(file)
+    }
+
+    const handleAvatar = (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = ev => setAvatarPreview(ev.target.result)
         reader.readAsDataURL(file)
     }
 
@@ -91,6 +102,7 @@ export default function Perfil() {
                     passwordActual: form.passwordActual || undefined,
                     passwordNueva: form.passwordNueva || undefined,
                     logoBase64: logoPreview,
+                    avatarBase64: avatarPreview,
                 })
             })
             const data = await res.json()
@@ -149,6 +161,10 @@ export default function Perfil() {
         display: "block", marginBottom: 6,
     }
 
+    // Lógica del avatar: fotoGoogle → avatarBase64 → inicial
+    const avatarSrc = usuario?.fotoGoogle || avatarPreview || null
+    const inicialFallback = usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"
+
     return (
         <div style={{ minHeight: "100vh", background: fondo, padding: "32px 16px", transition: "background 1s" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -205,24 +221,50 @@ export default function Perfil() {
                 {seccion === "perfil" && (
                     <div style={{ background: colorCard, borderRadius: 20, padding: 28, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", border: `1px solid ${colorBorde}` }}>
                         <h3 style={{ margin: "0 0 20px", color: colorTexto }}>👤 Mi perfil</h3>
-                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                            <div style={{
-                                width: 72, height: 72, borderRadius: "50%",
-                                background: colorAcento, display: "flex", alignItems: "center",
-                                justifyContent: "center", fontSize: 28, fontWeight: 700,
-                                color: "#fff", flexShrink: 0, overflow: "hidden",
-                                border: `3px solid ${colorAcento}`,
-                            }}>
-                                {usuario?.fotoGoogle
-                                    ? <img src={usuario.fotoGoogle} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    : usuario?.inicial || usuario?.nombre?.charAt(0).toUpperCase() || "U"}
+
+                        {/* Avatar con botón de cambiar foto */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
+                            <div style={{ position: "relative", flexShrink: 0 }}>
+                                <div style={{
+                                    width: 80, height: 80, borderRadius: "50%",
+                                    background: colorAcento, display: "flex", alignItems: "center",
+                                    justifyContent: "center", fontSize: 30, fontWeight: 700,
+                                    color: "#fff", overflow: "hidden",
+                                    border: `3px solid ${colorAcento}`,
+                                }}>
+                                    {avatarSrc
+                                        ? <img src={avatarSrc} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                        : inicialFallback}
+                                </div>
+                                {/* Botón 📷 solo si no usa Google */}
+                                {!usuario?.fotoGoogle && (
+                                    <label style={{
+                                        position: "absolute", bottom: 0, right: 0,
+                                        width: 26, height: 26, borderRadius: "50%",
+                                        background: colorAcento, border: "2px solid #fff",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        cursor: "pointer", fontSize: 13,
+                                    }} title="Cambiar foto">
+                                        📷
+                                        <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatar} style={{ display: "none" }} />
+                                    </label>
+                                )}
                             </div>
-                            <div>
+                            <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, fontSize: 18, color: colorTexto }}>{usuario?.nombre}</div>
                                 <div style={{ fontSize: 13, color: colorSuave }}>{usuario?.email}</div>
-                                {usuario?.fotoGoogle && <div style={{ fontSize: 11, color: colorAcento, marginTop: 4 }}>🔗 Cuenta vinculada con Google</div>}
+                                {usuario?.fotoGoogle
+                                    ? <div style={{ fontSize: 11, color: colorAcento, marginTop: 4 }}>🔗 Foto gestionada por Google</div>
+                                    : avatarPreview
+                                        ? <button type="button" onClick={() => setAvatarPreview(null)} style={{
+                                            all: "unset", cursor: "pointer", fontSize: 11,
+                                            color: "#e53e3e", marginTop: 4, display: "block"
+                                          }}>🗑 Quitar foto</button>
+                                        : <div style={{ fontSize: 11, color: colorSuave, marginTop: 4 }}>Toca 📷 para subir tu foto de perfil</div>
+                                }
                             </div>
                         </div>
+
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <div>
                                 <span style={labelStyle}>Nombre completo</span>

@@ -8,11 +8,11 @@ const inventarioSchema = new mongoose.Schema({
     tamañoPaquete:    { type: Number },
     unidad:           { type: String },
     costoPorPaquete:  { type: Number },
-    minimo:           { type: Number },       // siempre en gramos
-    cantidad:         { type: Number },       // en unidad original (para mostrar)
-    cantidadBase:     { type: Number },       // en gramos siempre (para calcular)
+    minimo:           { type: Number },
+    cantidad:         { type: Number },
+    cantidadBase:     { type: Number },
     costoTotal:       { type: Number },
-    costoPorGramo:    { type: Number },       // para descuentos de recetas
+    costoPorGramo:    { type: Number },
     fecha:            { type: Date, default: Date.now },
 }, { timestamps: true })
 
@@ -72,7 +72,8 @@ const usuarioSchema = new mongoose.Schema({
     passwordHash:  { type: String },
     googleId:      { type: String, sparse: true },
     fotoGoogle:    { type: String },
-    logoBase64: { type: String },
+    logoBase64:    { type: String },
+    avatarBase64:  { type: String },   // ✅ NUEVO: foto de perfil personal
     nombre:        { type: String, default: "" },
     inicial:       { type: String, default: "" },
     resetToken:       { type: String },
