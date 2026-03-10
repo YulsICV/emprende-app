@@ -140,8 +140,6 @@ export default function FormularioRecetas({
             boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
             padding: 24, marginBottom: 20,
         }}>
-
-            {/* ══ ENCABEZADO: título + envío gratis ══ */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <h3 style={{ margin: 0, fontSize: 16, color: "#2d3748" }}>
                     {form.nombre ? `✏️ ${form.nombre}` : "➕ Nueva receta"}
@@ -178,12 +176,10 @@ export default function FormularioRecetas({
                 </label>
             </div>
 
-            {/* ══ FOTO + CAMPOS BÁSICOS (lado a lado) ══ */}
             <div style={{
                 display: "flex", gap: 20, alignItems: "flex-start", justifyContent: "center",
                 marginBottom: 16, flexWrap: "wrap",
             }}>
-                {/* Columna foto */}
                 <div style={{
                     flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, width: 120, minWidth: 120, alignItems: "center", margin: "0 auto",
                 }}>
@@ -230,7 +226,6 @@ export default function FormularioRecetas({
                     />
                 </div>
 
-                {/* Columna campos: Nombre, Categoría, Porciones */}
                 <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ position: "relative" }}>
                         <span style={labelStyle}>Nombre de la receta</span>
@@ -251,7 +246,8 @@ export default function FormularioRecetas({
                                 overflow: "hidden", marginTop: 2,
                             }}>
                                 {sugerencias.map(r => (
-                                    <div key={r.id}
+                                    // FIX Bug 3: usar _id en vez de id (MongoDB)
+                                    <div key={r._id}
                                         onMouseDown={() => { onJalarReceta(r); setMostrarSug(false) }}
                                         style={{
                                             padding: "9px 14px", cursor: "pointer", fontSize: 14,
@@ -288,7 +284,6 @@ export default function FormularioRecetas({
                 </div>
             </div>
 
-            {/* ══ Márgenes + preview precios ══ */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
                 <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", marginBottom: 12, letterSpacing: 0.5, margin: "0 0 12px 0" }}>
                     💰 MÁRGENES DE GANANCIA
@@ -327,7 +322,6 @@ export default function FormularioRecetas({
                 )}
             </div>
 
-            {/* ══ Equipo + Temp + Tiempo ══ */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
                 <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", marginBottom: 12, margin: "0 0 12px 0", letterSpacing: 0.5 }}>
                     🍳 CONDICIONES DE PREPARACIÓN
@@ -357,7 +351,6 @@ export default function FormularioRecetas({
                 </div>
             </div>
 
-            {/* ══ Pasos ══ */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", letterSpacing: 0.5, margin: 0 }}>
@@ -407,4 +400,3 @@ export default function FormularioRecetas({
         </div>
     )
 }
-

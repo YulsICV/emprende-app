@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { useRecetario } from "../hooks/useRecetario"
+import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
 
 const PRINT_STYLE = `
 @media print {
@@ -38,6 +39,22 @@ function parsearNumero(valor) {
     return parseFloat(str) || 0
 }
 
+// FIX Bug 2: costo por gramo para mostrar en sugerencias correctamente
+function costoPorGramoItem(item) {
+    if (item.costoPorGramo) return item.costoPorGramo
+    const factor = CONVERSIONES_A_GRAMOS[item.unidad]
+    const cantidadBase = factor ? parsearNumero(item.cantidad) * factor : parsearNumero(item.cantidad)
+    if (!cantidadBase || !item.costoTotal) return 0
+    return parsearNumero(item.costoTotal) / cantidadBase
+}
+
+function aGramos(cantidad, unidad) {
+    const n = parsearNumero(cantidad)
+    const factor = CONVERSIONES_A_GRAMOS[unidad]
+    if (!factor) return n
+    return n * factor
+}
+
 function ModalNuevoIngrediente({ nombreSugerido, onGuardar, onCancelar }) {
     const [form, setForm] = useState({ nombre: nombreSugerido || "", cantidadPaquetes: "", tamañoPaquete: "", unidadPaquete: "g", costoPorPaquete: "", minimo: "", tipo: "ingrediente" })
     const numPaquetes = parsearNumero(form.cantidadPaquetes)
@@ -49,7 +66,23 @@ function ModalNuevoIngrediente({ nombreSugerido, onGuardar, onCancelar }) {
 
     const handleGuardar = () => {
         if (!form.nombre.trim() || !form.cantidadPaquetes || !form.tamañoPaquete || !form.costoPorPaquete) return
-        onGuardar({ nombre: form.nombre.trim(), tipo: form.tipo || "ingrediente", cantidadPaquetes: numPaquetes, tamañoPaquete: numTamaño, unidad: form.unidadPaquete, costoPorPaquete: numCosto, minimo: parsearNumero(form.minimo) || "", cantidad: totalInventario, costoTotal, fecha: new Date().toISOString() })
+        const cantidadBase = aGramos(totalInventario, form.unidadPaquete)
+        const costoPorGramo = cantidadBase > 0 ? costoTotal / cantidadBase : 0
+        // FIX Bug 1: incluir cantidadBase y costoPorGramo al guardar desde recetario
+        onGuardar({
+            nombre: form.nombre.trim(),
+            tipo: form.tipo || "ingrediente",
+            cantidadPaquetes: numPaquetes,
+            tamañoPaquete: numTamaño,
+            unidad: form.unidadPaquete,
+            costoPorPaquete: numCosto,
+            minimo: parsearNumero(form.minimo) || "",
+            cantidad: totalInventario,
+            cantidadBase,
+            costoTotal,
+            costoPorGramo,
+            fecha: new Date().toISOString()
+        })
     }
 
     const inputStyle = { width: "100%", padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff", color: "#2d3748" }
@@ -90,7 +123,7 @@ function ModalNuevoIngrediente({ nombreSugerido, onGuardar, onCancelar }) {
                         </div>
                         {numCosto > 0 && <small style={{ color: "#718096", marginTop: 4, display: "block" }}>= ₡{numCosto.toLocaleString("es-CR")}</small>}
                     </div>
-                    <div style={{ marginBottom: 20 }}><span style={labelStyle}>Mínimo para alerta (opcional)</span><input type="text" inputMode="decimal" value={form.minimo} onChange={e => setForm(prev => ({ ...prev, minimo: e.target.value }))} style={inputStyle} placeholder="200" /></div>
+                    <div style={{ marginBottom: 20 }}><span style={labelStyle}>Mínimo para alerta en gramos (opcional)</span><input type="text" inputMode="decimal" value={form.minimo} onChange={e => setForm(prev => ({ ...prev, minimo: e.target.value }))} style={inputStyle} placeholder="200" /></div>
                     {totalInventario > 0 && costoTotal > 0 && (
                         <div style={{ background: "#e8f8f5", border: "2px solid #2ec4a9", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid #2ec4a9" }}>
@@ -346,7 +379,10 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                                             <div key={ing._id || idx} onClick={() => seleccionarIng(ing)} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: idx < sugerencias.length - 1 ? "1px solid #f0f0f0" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
                                                 onMouseEnter={e => e.currentTarget.style.background = "#f8fffe"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
                                                 <span style={{ fontSize: 14, fontWeight: 500 }}>{ing.nombre}</span>
-                                                <span style={{ fontSize: 12, color: "#1a9e87", background: "#e8f8f5", padding: "2px 8px", borderRadius: 6 }}>₡{ing.costoTotal ? (ing.costoTotal / ing.cantidad).toFixed(0) : "?"}/{ing.unidad}</span>
+                                                {/* FIX Bug 2: mostrar costo por gramo correctamente */}
+                                                <span style={{ fontSize: 12, color: "#1a9e87", background: "#e8f8f5", padding: "2px 8px", borderRadius: 6 }}>
+                                                    ₡{costoPorGramoItem(ing).toFixed(4)}/g
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
