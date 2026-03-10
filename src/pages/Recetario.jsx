@@ -16,11 +16,17 @@ const PRINT_STYLE = `
 }
 `
 
-const EQUIPOS = ["", "Horno", "Estufa", "Batidora", "Freidora de aire", "Microondas", "Ninguno", "Otro"]
-const FORM_VACIO = { nombre: "", categoria: "Clásica", unidades: "", fotoBase64: "", fotoUrl: "", equipo: "", temperatura: "", tiempoCoccion: "", ingredientes: [], pasos: [] }
+const EQUIPOS = ["Horno", "Estufa", "Batidora", "Freidora de aire", "Microondas", "Ninguno", "Otro"]
+const FORM_VACIO = { nombre: "", categoria: "Clásica", unidades: "", fotoBase64: "", fotoUrl: "", equipo: [], temperatura: "", tiempoCoccion: "", ingredientes: [], pasos: [] }
 const ING_VACIO = { nombre: "", cantidadUso: "", unidadUso: "taza" }
 const UNIDADES_ING = ["taza", "g", "kg", "ml", "l", "cdta", "cda", "oz", "lb", "unidad", "pizca"]
 const UNIDADES_PAQUETE = ["g", "kg", "ml", "l", "oz", "lb", "unidad"]
+
+function normalizarEquipo(equipo) {
+    if (Array.isArray(equipo)) return equipo
+    if (equipo && typeof equipo === "string") return [equipo]
+    return []
+}
 
 function parsearNumero(valor) {
     if (!valor && valor !== 0) return 0
@@ -39,7 +45,6 @@ function parsearNumero(valor) {
     return parseFloat(str) || 0
 }
 
-// FIX Bug 2: costo por gramo para mostrar en sugerencias correctamente
 function costoPorGramoItem(item) {
     if (item.costoPorGramo) return item.costoPorGramo
     const factor = CONVERSIONES_A_GRAMOS[item.unidad]
@@ -68,7 +73,6 @@ function ModalNuevoIngrediente({ nombreSugerido, onGuardar, onCancelar }) {
         if (!form.nombre.trim() || !form.cantidadPaquetes || !form.tamañoPaquete || !form.costoPorPaquete) return
         const cantidadBase = aGramos(totalInventario, form.unidadPaquete)
         const costoPorGramo = cantidadBase > 0 ? costoTotal / cantidadBase : 0
-        // FIX Bug 1: incluir cantidadBase y costoPorGramo al guardar desde recetario
         onGuardar({
             nombre: form.nombre.trim(),
             tipo: form.tipo || "ingrediente",
@@ -153,6 +157,7 @@ function inyectarEstiloImpresion() {
 function TarjetaReceta({ receta, onVerDetalle, onEliminar }) {
     const foto = receta.fotoBase64 || receta.fotoUrl
     const [confirmando, setConfirmando] = useState(false)
+    const equipos = normalizarEquipo(receta.equipo)
     return (
         <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", transition: "transform 0.15s, box-shadow 0.15s", border: "1px solid var(--gris-borde)", position: "relative" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.13)" }}
@@ -178,7 +183,9 @@ function TarjetaReceta({ receta, onVerDetalle, onEliminar }) {
                         <span style={{ fontSize: 11, background: "var(--verde-claro)", color: "var(--verde-oscuro)", padding: "3px 8px", borderRadius: 8, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{receta.categoria}</span>
                     </div>
                     <p style={{ fontSize: 12, color: "var(--texto-suave)", marginTop: 5 }}>
-                        {receta.unidades ? `${receta.unidades} porciones` : ""}{receta.equipo ? ` · ${receta.equipo}` : ""}{receta.tiempoCoccion ? ` · ${receta.tiempoCoccion} min` : ""}
+                        {receta.unidades ? `${receta.unidades} porciones` : ""}
+                        {equipos.length > 0 ? ` · ${equipos.join(", ")}` : ""}
+                        {receta.tiempoCoccion ? ` · ${receta.tiempoCoccion} min` : ""}
                     </p>
                     {receta.pasos?.length > 0 && <p style={{ fontSize: 11, color: "var(--texto-suave)", marginTop: 3 }}>📋 {receta.pasos.length} paso{receta.pasos.length !== 1 ? "s" : ""}{receta.ingredientes?.length > 0 ? ` · 🧁 ${receta.ingredientes.length} ingrediente${receta.ingredientes.length !== 1 ? "s" : ""}` : ""}</p>}
                 </div>
@@ -190,6 +197,7 @@ function TarjetaReceta({ receta, onVerDetalle, onEliminar }) {
 function ModalDetalle({ receta, onCerrar, onImprimir, onEditar, onEliminar }) {
     const foto = receta.fotoBase64 || receta.fotoUrl
     const [confirmando, setConfirmando] = useState(false)
+    const equipos = normalizarEquipo(receta.equipo)
     return (
         <div onClick={onCerrar} style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px", overflowY: "auto" }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 18, width: "100%", maxWidth: 600, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}>
@@ -214,9 +222,9 @@ function ModalDetalle({ receta, onCerrar, onImprimir, onEditar, onEliminar }) {
                             <button type="button" onClick={onCerrar} style={{ all: "unset", cursor: "pointer", fontSize: 20, color: "var(--texto-suave)", lineHeight: 1, padding: "4px 8px" }}>✕</button>
                         </div>
                     </div>
-                    {(receta.equipo || receta.temperatura || receta.tiempoCoccion) && (
+                    {(equipos.length > 0 || receta.temperatura || receta.tiempoCoccion) && (
                         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", background: "var(--gris)", borderRadius: 10, padding: "10px 16px", marginBottom: 20 }}>
-                            {receta.equipo && <span style={{ fontSize: 13 }}>🔧 <strong>{receta.equipo}</strong></span>}
+                            {equipos.length > 0 && <span style={{ fontSize: 13 }}>🔧 <strong>{equipos.join(", ")}</strong></span>}
                             {receta.temperatura && <span style={{ fontSize: 13 }}>🌡️ <strong>{receta.temperatura}°C</strong></span>}
                             {receta.tiempoCoccion && <span style={{ fontSize: 13 }}>⏱️ <strong>{receta.tiempoCoccion} min</strong></span>}
                         </div>
@@ -255,6 +263,7 @@ function VistaPrint({ recetas }) {
         <div id="recetario-print" style={{ display: "none" }}>
             {recetas.map(receta => {
                 const foto = receta.fotoBase64 || receta.fotoUrl
+                const equipos = normalizarEquipo(receta.equipo)
                 return (
                     <div key={receta._id} className="receta-print-pagina" style={{ padding: "0 0 40px" }}>
                         <div style={{ borderBottom: "3px solid #1a9e87", paddingBottom: 12, marginBottom: 20 }}>
@@ -264,6 +273,7 @@ function VistaPrint({ recetas }) {
                         {foto && <img src={foto} alt={receta.nombre} style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 10, marginBottom: 20 }} />}
                         <div style={{ display: "grid", gridTemplateColumns: (receta.pasos || []).length > 0 ? "1fr 1fr" : "1fr", gap: 24 }}>
                             <div>
+                                {equipos.length > 0 && <p style={{ fontSize: 12, color: "#718096", marginBottom: 8 }}>🔧 {equipos.join(", ")}</p>}
                                 {(receta.ingredientes || []).length > 0 && (<>
                                     <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", letterSpacing: 0.5, marginBottom: 8 }}>🧁 INGREDIENTES</p>
                                     {receta.ingredientes.map((ing, i) => (
@@ -296,7 +306,8 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
     const [form, setForm] = useState(inicial ? {
         nombre: inicial.nombre || "", categoria: inicial.categoria || "Clásica", unidades: inicial.unidades || "",
         fotoBase64: inicial.fotoBase64 || "", fotoUrl: inicial.fotoUrl || "",
-        equipo: inicial.equipo || "", temperatura: inicial.temperatura || "", tiempoCoccion: inicial.tiempoCoccion || "",
+        equipo: normalizarEquipo(inicial.equipo),
+        temperatura: inicial.temperatura || "", tiempoCoccion: inicial.tiempoCoccion || "",
         ingredientes: inicial.ingredientes || [], pasos: inicial.pasos || [],
     } : FORM_VACIO)
     const [ingForm, setIngForm] = useState(ING_VACIO)
@@ -326,6 +337,12 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
         setIngForm(ING_VACIO); setBusquedaIng("")
     }
 
+    const toggleEquipo = (eq) => {
+        const actual = normalizarEquipo(form.equipo)
+        const nuevo = actual.includes(eq) ? actual.filter(e => e !== eq) : [...actual, eq]
+        set("equipo", nuevo)
+    }
+
     const handleGuardarNuevoIng = (nuevoIng) => { onAgregarIngredienteInventario(nuevoIng); setModalNuevoIng(null); agregarIngredienteALista() }
     const eliminarIng = (id) => setForm(prev => ({ ...prev, ingredientes: prev.ingredientes.filter(i => i.id !== id) }))
     const agregarPaso = () => setForm(prev => ({ ...prev, pasos: [...prev.pasos, ""] }))
@@ -334,6 +351,7 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
     const handleFoto = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => set("fotoBase64", ev.target.result); reader.readAsDataURL(file) }
 
     const foto = form.fotoBase64 || form.fotoUrl
+    const equiposSeleccionados = normalizarEquipo(form.equipo)
     const inputStyle = { width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff", color: "#2d3748" }
     const labelStyle = { fontSize: 11, fontWeight: 700, color: "#718096", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 4 }
 
@@ -359,7 +377,30 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                     </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 16 }}>
-                    <div style={{ gridColumn: "span 2" }}><span style={labelStyle}>Equipo</span><select value={form.equipo} onChange={e => set("equipo", e.target.value)} style={inputStyle}>{EQUIPOS.map(eq => <option key={eq} value={eq}>{eq || "Seleccionar..."}</option>)}</select></div>
+                    <div style={{ gridColumn: "span 2" }}>
+                        <span style={labelStyle}>Equipo</span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                            {EQUIPOS.map(eq => {
+                                const seleccionado = equiposSeleccionados.includes(eq)
+                                return (
+                                    <label key={eq} style={{
+                                        display: "flex", alignItems: "center", gap: 6,
+                                        padding: "7px 12px", borderRadius: 20, cursor: "pointer",
+                                        border: `1.5px solid ${seleccionado ? "#1a9e87" : "#e2e8f0"}`,
+                                        background: seleccionado ? "#e8f8f5" : "#fff",
+                                        fontSize: 13, fontWeight: seleccionado ? 600 : 400,
+                                        color: seleccionado ? "#1a9e87" : "#4a5568",
+                                        transition: "all 0.15s",
+                                    }}>
+                                        <input type="checkbox" checked={seleccionado}
+                                            onChange={() => toggleEquipo(eq)}
+                                            style={{ display: "none" }} />
+                                        {eq}
+                                    </label>
+                                )
+                            })}
+                        </div>
+                    </div>
                     <div><span style={labelStyle}>Temp (°C)</span><input type="number" value={form.temperatura} placeholder="180" onChange={e => set("temperatura", e.target.value)} style={inputStyle} /></div>
                     <div><span style={labelStyle}>Tiempo (min)</span><input type="number" value={form.tiempoCoccion} placeholder="25" onChange={e => set("tiempoCoccion", e.target.value)} style={inputStyle} /></div>
                 </div>
@@ -379,7 +420,6 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                                             <div key={ing._id || idx} onClick={() => seleccionarIng(ing)} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: idx < sugerencias.length - 1 ? "1px solid #f0f0f0" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
                                                 onMouseEnter={e => e.currentTarget.style.background = "#f8fffe"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
                                                 <span style={{ fontSize: 14, fontWeight: 500 }}>{ing.nombre}</span>
-                                                {/* FIX Bug 2: mostrar costo por gramo correctamente */}
                                                 <span style={{ fontSize: 12, color: "#1a9e87", background: "#e8f8f5", padding: "2px 8px", borderRadius: 6 }}>
                                                     ₡{costoPorGramoItem(ing).toFixed(4)}/g
                                                 </span>
@@ -464,9 +504,7 @@ export default function Recetario() {
                     <button type="button" onClick={() => { setEditando(null); setMostrarFormulario(true) }} style={{ all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verde-oscuro)", color: "#fff", padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600 }}>➕ Nueva receta</button>
                 </div>
             </div>
-
             {mostrarFormulario && <FormularioRecetario inicial={editando} onGuardar={handleGuardar} onCancelar={() => { setMostrarFormulario(false); setEditando(null) }} inventario={inventario} onAgregarIngredienteInventario={agregarIngredienteInventario} />}
-
             {recetas.length > 0 && (
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
                     <input type="text" placeholder="🔍 Buscar receta..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{ flex: 1, minWidth: 180, maxWidth: 280 }} />
@@ -475,7 +513,6 @@ export default function Recetario() {
                     </div>
                 </div>
             )}
-
             {recetas.length === 0 && !mostrarFormulario ? (
                 <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
                     <div style={{ fontSize: 64, marginBottom: 16 }}>🍩</div>
@@ -490,7 +527,6 @@ export default function Recetario() {
                     {recetasFiltradas.map(receta => <TarjetaReceta key={receta._id} receta={receta} onVerDetalle={setDetalle} onEliminar={handleEliminar} />)}
                 </div>
             )}
-
             {detalle && <ModalDetalle receta={detalle} onCerrar={() => setDetalle(null)} onImprimir={imprimir} onEditar={abrirEditar} onEliminar={handleEliminar} />}
             {recetasParaImprimir.length > 0 && <VistaPrint recetas={recetasParaImprimir} />}
         </div>

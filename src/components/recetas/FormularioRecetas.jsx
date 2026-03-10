@@ -66,6 +66,13 @@ function SelectorCategoria({ value, onChange, categorias, onAgregarCategoria }) 
     )
 }
 
+// Helper para normalizar equipo (compatibilidad con datos viejos en string)
+function normalizarEquipo(equipo) {
+    if (Array.isArray(equipo)) return equipo
+    if (equipo && typeof equipo === "string") return [equipo]
+    return []
+}
+
 export default function FormularioRecetas({
     form, setForm, recetario = [], onJalarReceta,
     precioMayoreo = 0, precioMenudeo = 0, costoPorUnidad = 0
@@ -133,6 +140,15 @@ export default function FormularioRecetas({
         setForm(prev => ({ ...prev, pasos: (prev.pasos || []).filter((_, idx) => idx !== i) }))
 
     const foto = form.fotoBase64 || form.fotoUrl
+    const equiposSeleccionados = normalizarEquipo(form.equipo)
+
+    const toggleEquipo = (eq) => {
+        const actual = normalizarEquipo(form.equipo)
+        const nuevo = actual.includes(eq)
+            ? actual.filter(e => e !== eq)
+            : [...actual, eq]
+        setForm(prev => ({ ...prev, equipo: nuevo }))
+    }
 
     return (
         <div style={{
@@ -181,7 +197,8 @@ export default function FormularioRecetas({
                 marginBottom: 16, flexWrap: "wrap",
             }}>
                 <div style={{
-                    flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, width: 120, minWidth: 120, alignItems: "center", margin: "0 auto",
+                    flexShrink: 0, display: "flex", flexDirection: "column", gap: 8,
+                    width: 120, minWidth: 120, alignItems: "center", margin: "0 auto",
                 }}>
                     <div style={{
                         width: 120, height: 120, borderRadius: 12,
@@ -246,7 +263,6 @@ export default function FormularioRecetas({
                                 overflow: "hidden", marginTop: 2,
                             }}>
                                 {sugerencias.map(r => (
-                                    // FIX Bug 3: usar _id en vez de id (MongoDB)
                                     <div key={r._id}
                                         onMouseDown={() => { onJalarReceta(r); setMostrarSug(false) }}
                                         style={{
@@ -329,12 +345,27 @@ export default function FormularioRecetas({
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div style={{ gridColumn: "1 / -1" }}>
                         <span style={labelStyle}>Equipo</span>
-                        <select value={form.equipo || ""}
-                            onChange={e => setForm(prev => ({ ...prev, equipo: e.target.value }))}
-                            style={inputStyle}>
-                            <option value="">Ninguno</option>
-                            {EQUIPOS.map(eq => <option key={eq}>{eq}</option>)}
-                        </select>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                            {EQUIPOS.map(eq => {
+                                const seleccionado = equiposSeleccionados.includes(eq)
+                                return (
+                                    <label key={eq} style={{
+                                        display: "flex", alignItems: "center", gap: 6,
+                                        padding: "7px 12px", borderRadius: 20, cursor: "pointer",
+                                        border: `1.5px solid ${seleccionado ? "#1a9e87" : "#e2e8f0"}`,
+                                        background: seleccionado ? "#e8f8f5" : "#fff",
+                                        fontSize: 13, fontWeight: seleccionado ? 600 : 400,
+                                        color: seleccionado ? "#1a9e87" : "#4a5568",
+                                        transition: "all 0.15s",
+                                    }}>
+                                        <input type="checkbox" checked={seleccionado}
+                                            onChange={() => toggleEquipo(eq)}
+                                            style={{ display: "none" }} />
+                                        {eq}
+                                    </label>
+                                )
+                            })}
+                        </div>
                     </div>
                     <div>
                         <span style={labelStyle}>Temperatura (°C)</span>
@@ -366,9 +397,7 @@ export default function FormularioRecetas({
                     </button>
                 </div>
                 {(!form.pasos || form.pasos.length === 0) && (
-                    <p style={{ fontSize: 13, color: "#718096", fontStyle: "italic" }}>
-                        Sin pasos aún.
-                    </p>
+                    <p style={{ fontSize: 13, color: "#718096", fontStyle: "italic" }}>Sin pasos aún.</p>
                 )}
                 {(form.pasos || []).map((paso, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10 }}>

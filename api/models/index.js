@@ -28,7 +28,7 @@ const recetaSchema = new mongoose.Schema({
     envioGratis:   { type: Boolean, default: false },
     fotoBase64:    { type: String },
     fotoUrl:       { type: String },
-    equipo:        { type: String },
+    equipo:        { type: Array, default: [] },      // ← Array
     temperatura:   { type: Number },
     tiempoCoccion: { type: Number },
     pasos:         { type: Array, default: [] },
@@ -48,7 +48,7 @@ const recetarioSchema = new mongoose.Schema({
     ingredientes:  { type: Array, default: [] },
     fotoBase64:    { type: String },
     fotoUrl:       { type: String },
-    equipo:        { type: String },
+    equipo:        { type: Array, default: [] },      // ← Array
     temperatura:   { type: Number },
     tiempoCoccion: { type: Number },
     pasos:         { type: Array, default: [] },
