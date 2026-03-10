@@ -179,7 +179,7 @@ export default function LoginPage() {
                         {/* Email */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={labelStyle}>Correo electrónico</label>
-                            <input type="email" placeholder="tu@correo.com"
+                            <input type="email" placeholder="tucorreo@correo.com"
                                 value={form.email}
                                 onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setError("") }}
                                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
