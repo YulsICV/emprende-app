@@ -33,6 +33,7 @@ function generarToken(usuario) {
 }
 
 export default async function handler(req, res) {
+    try {
     await connectDB()
 
     const { accion } = req.query
@@ -228,4 +229,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: "Método no permitido" })
+    } catch (err) {
+        console.error("AUTH ERROR:", err)
+        return res.status(500).json({ error: err.message, stack: err.stack })
+    }
 }
