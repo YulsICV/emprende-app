@@ -1,5 +1,6 @@
 import { connectDB } from "./lib/mongodb.js"
 import { Usuario } from "./models/index.js"
+import mongoose from "mongoose"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
@@ -49,12 +50,15 @@ export default async function handler(req, res) {
             return res.status(409).json({ error: "Ya existe una cuenta con ese email." })
         }
         const passwordHash = await bcrypt.hash(password, 12)
+        const _id = new mongoose.Types.ObjectId()
         const usuario = await Usuario.create({
+            _id,
             email: email.toLowerCase().trim(),
             passwordHash,
             nombre,
             nombreNegocio: nombreNegocio || nombre,
             inicial: nombre.charAt(0).toUpperCase(),
+            negocioId: _id.toString(),
         })
         const token = generarToken(usuario)
         return res.status(201).json({
@@ -122,14 +126,16 @@ export default async function handler(req, res) {
         let usuario = await Usuario.findOne({ $or: [{ googleId }, { email }] })
 
         if (!usuario) {
-            // Primera vez con Google — crear cuenta
+            const _id = new mongoose.Types.ObjectId()
             usuario = await Usuario.create({
+                _id,
                 email:        email.toLowerCase(),
                 googleId,
                 fotoGoogle:   picture,
                 nombre:       name,
                 nombreNegocio:name,
                 inicial:      name.charAt(0).toUpperCase(),
+                negocioId:    _id.toString(),
             })
         } else if (!usuario.googleId) {
             // Ya tenía cuenta con email — vincular Google

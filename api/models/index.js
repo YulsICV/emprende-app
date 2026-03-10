@@ -94,18 +94,6 @@ const usuarioSchema = new mongoose.Schema({
     fecha:         { type: Date, default: Date.now },
 }, { timestamps: true })
 
-// Generar negocioId automáticamente al crear usuario si no tiene uno
-usuarioSchema.pre("save", function (next) {
-    if (!this.negocioId) {
-        this.negocioId = this._id.toString()
-    }
-    // Generar inicial desde nombre si no se provee
-    if (!this.inicial && this.nombre) {
-        this.inicial = this.nombre.charAt(0).toUpperCase()
-    }
-    next()
-})
-
 // Evitar re-registrar modelos en hot reload
 export const Inventario = mongoose.models.Inventario || mongoose.model("Inventario", inventarioSchema)
 export const Receta     = mongoose.models.Receta     || mongoose.model("Receta",     recetaSchema)
