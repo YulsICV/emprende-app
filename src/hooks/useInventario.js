@@ -42,6 +42,7 @@ export function useInventario() {
         i.nombre.toLowerCase().includes(busqueda.toLowerCase())
     )
 
+    // ── GUARDAR (crear o actualizar) ──
     const guardar = async () => {
         if (!form.nombre || !form.cantidadPaquetes || !form.tamañoPaquete) return
 
@@ -57,15 +58,22 @@ export function useInventario() {
             costoTotal: numPaquetes * numCosto,
         }
 
-        if (editandoId) {
-            const updated = await apiInventario.actualizar({ ...datos, id: editandoId })
-            setInventario(prev => prev.map(i => i._id === editandoId ? updated : i))
-            setEditandoId(null)
-        } else {
-            const nuevo = await apiInventario.crear(datos)
-            setInventario(prev => [nuevo, ...prev])
+        try {
+            if (editandoId) {
+                const updated = await apiInventario.actualizar({ ...datos, id: editandoId })
+                if (!updated?._id) throw new Error(updated?.error || "Error al actualizar")
+                setInventario(prev => prev.map(i => i._id === editandoId ? updated : i))
+                setEditandoId(null)
+            } else {
+                const nuevo = await apiInventario.crear(datos)
+                if (!nuevo?._id) throw new Error(nuevo?.error || "Error al guardar")
+                setInventario(prev => [nuevo, ...prev])
+            }
+            setForm(FORM_INICIAL)
+        } catch (err) {
+            console.error("Error guardando inventario:", err)
+            alert("❌ No se pudo guardar: " + err.message)
         }
-        setForm(FORM_INICIAL)
     }
 
     const editar = (item) => {
@@ -88,9 +96,14 @@ export function useInventario() {
     }
 
     const eliminar = async (id) => {
-        await apiInventario.eliminar(id)
-        setInventario(prev => prev.filter(i => i._id !== id))
-        setModalEliminar(null)
+        try {
+            await apiInventario.eliminar(id)
+            setInventario(prev => prev.filter(i => i._id !== id))
+            setModalEliminar(null)
+        } catch (err) {
+            console.error("Error eliminando:", err)
+            alert("❌ No se pudo eliminar: " + err.message)
+        }
     }
 
     return {
