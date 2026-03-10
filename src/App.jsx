@@ -38,6 +38,9 @@ export default function App() {
 
     if (!usuario) return <LoginPage />
 
+    // ✅ fotoGoogle → avatarBase64 → inicial
+    const avatarSrc = usuario.fotoGoogle || usuario.avatarBase64 || null
+
     return (
         <div className="app">
             <header className="app-header">
@@ -55,11 +58,13 @@ export default function App() {
                 />
 
                 <div className="header-sesion">
-                    {usuario.fotoGoogle ? (
-                        <img src={usuario.fotoGoogle} alt="avatar"
+                    {avatarSrc ? (
+                        <img src={avatarSrc} alt="avatar"
                             style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
                     ) : (
-                        <div className="sesion-avatar">{usuario.inicial}</div>
+                        <div className="sesion-avatar">
+                            {usuario.inicial || usuario.nombre?.charAt(0).toUpperCase() || "U"}
+                        </div>
                     )}
                     <span className="sesion-nombre">{usuario.nombre}</span>
                     <button className="sesion-salir" onClick={logout}>Salir</button>
