@@ -24,9 +24,12 @@ export function formatearCantidad(cantidadBase, unidad) {
     const factor = CONVERSIONES_A_GRAMOS[unidad]
     if (!factor) return `${cantidadBase} ${unidad}`
     const enUnidadOriginal = cantidadBase / factor
-    if ((unidad === "kg" || unidad === "L") && enUnidadOriginal < 1) {
+    if ((unidad === "kg" || unidad === "l" || unidad === "L") && enUnidadOriginal < 1) {
         const unidadMenor = unidad === "kg" ? "g" : "ml"
         return `${Math.round(cantidadBase)} ${unidadMenor}`
+    }
+    if (unidad === "lb" && enUnidadOriginal < 1) {
+        return `${Math.round(cantidadBase / CONVERSIONES_A_GRAMOS["oz"])} oz`
     }
     const val = parseFloat(enUnidadOriginal.toFixed(2))
     return `${val} ${unidad}`
@@ -56,8 +59,9 @@ export function useInventario() {
 
     const bajoStock = inventario.filter(i => {
         if (!i.minimo) return false
-        const cantidadEnGramos = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
-        return cantidadEnGramos <= parsearNumero(i.minimo)
+        const cantidadEnBase = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
+        const minimoEnBase = aGramos(parsearNumero(i.minimo), i.unidad)
+        return cantidadEnBase <= minimoEnBase
     })
 
     const itemsFiltrados = inventario.filter(i =>

@@ -1,10 +1,18 @@
+import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
 import { parsearNumero } from "../utils/parsearNumero"
-import { useInventario } from "../hooks/useInventario"
+import { useInventario, formatearCantidad } from "../hooks/useInventario"
 import { useMetricasInventario } from "../hooks/useMetricasInventario"
 import FormularioInventario from "../components/inventario/FormularioInventario"
 import ResumenInventario from "../components/inventario/ResumenInventario"
 import TablaInventario from "../components/inventario/TablaInventario"
 import ModalEliminar from "../components/inventario/ModalEliminar"
+
+function aGramos(cantidad, unidad) {
+    const n = parsearNumero(cantidad)
+    const factor = CONVERSIONES_A_GRAMOS[unidad]
+    if (!factor) return n
+    return n * factor
+}
 
 export default function Inventario({ db }) {
     const {
@@ -24,7 +32,6 @@ export default function Inventario({ db }) {
         eliminar,
     } = useInventario()
 
-    // FIX: inyectar inventario real de MongoDB en db antes de pasarlo a métricas
     const dbConInventario = { ...db, inventario }
     const metricas = useMetricasInventario(dbConInventario)
 
@@ -43,10 +50,11 @@ export default function Inventario({ db }) {
                     <p style={{ fontWeight: 700, marginBottom: 6 }}>⚠️ Productos con stock bajo:</p>
                     {bajoStock.map(i => (
                         <p key={i._id} style={{ margin: "2px 0" }}>
-                            • <strong>{i.nombre}</strong>: {parsearNumero(i.cantidad).toFixed(1)}{i.unidad}
+                            • <strong>{i.nombre}</strong>:{" "}
+                            {formatearCantidad(i.cantidadBase ?? aGramos(i.cantidad, i.unidad), i.unidad)}
                             {i.minimo && (
                                 <span style={{ color: "var(--texto-suave)" }}>
-                                    {" "}(mín. {i.minimo}{i.unidad})
+                                    {" "}(mín. {i.minimo} {i.unidad})
                                 </span>
                             )}
                         </p>
