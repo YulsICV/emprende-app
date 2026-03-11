@@ -74,14 +74,15 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                         <th>Disponible</th>
                                         <th>Costo por g</th>
                                         <th>Costo total</th>
-                                        <th>Alerta (g)</th>
+                                        <th>Alerta mín.</th>
                                         <th style={{ textAlign: "center" }}>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.map(i => {
-                                        const cantidadEnGramos = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
-                                        const bajo = i.minimo && cantidadEnGramos <= parsearNumero(i.minimo)
+                                        const cantidadEnBase = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
+                                        const minimoEnBase = i.minimo ? aGramos(parsearNumero(i.minimo), i.unidad) : null
+                                        const bajo = minimoEnBase !== null && cantidadEnBase <= minimoEnBase
                                         return (
                                             <tr key={i._id} style={{ background: bajo ? "#fffbeb" : undefined }}>
                                                 <td>
@@ -99,7 +100,7 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                                 </td>
                                                 <td>
                                                     <strong style={{ color: bajo ? "#d97706" : color }}>
-                                                        {formatearCantidad(cantidadEnGramos, i.unidad)}
+                                                        {formatearCantidad(cantidadEnBase, i.unidad)}
                                                     </strong>
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)", fontSize: 13 }}>
@@ -111,7 +112,9 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                                     {i.costoTotal ? `₡${parsearNumero(i.costoTotal).toLocaleString("es-CR")}` : "—"}
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)" }}>
-                                                    {i.minimo ? `${i.minimo}g` : "—"}
+                                                    {i.minimo
+                                                        ? formatearCantidad(aGramos(parsearNumero(i.minimo), i.unidad), i.unidad)
+                                                        : "—"}
                                                 </td>
                                                 <td style={{ textAlign: "center" }}>
                                                     <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
