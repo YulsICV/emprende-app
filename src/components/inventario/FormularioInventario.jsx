@@ -1,4 +1,5 @@
 import { parsearNumero, sugerirConversion } from "../../utils/parsearNumero"
+import { unidadBase } from "../../hooks/useInventario"
 
 const UNIDADES = ["g", "kg", "ml", "L", "unidad", "paquete", "taza", "sobre", "caja"]
 
@@ -23,18 +24,24 @@ function InputMoneda({ label, value, onChange, placeholder }) {
     )
 }
 
-function InputNumero({ label, value, onChange, placeholder }) {
+function InputNumero({ label, value, onChange, placeholder, hint }) {
     return (
         <div className="form-grupo">
             <label>{label}</label>
             <input type="text" inputMode="decimal" placeholder={placeholder || "0"}
                 value={value} onChange={e => onChange(e.target.value)} />
+            {hint && (
+                <small style={{ color: "var(--texto-suave)", marginTop: 2, display: "block" }}>
+                    {hint}
+                </small>
+            )}
         </div>
     )
 }
 
 export default function FormularioInventario({ form, setForm, editandoId, totalInventario, costoTotal, onGuardar, onCancelar }) {
     const sugerencia = sugerirConversion(form.tamañoPaquete, form.unidad)
+    const uBase = unidadBase(form.unidad)
 
     const aplicarSugerencia = () => {
         if (!sugerencia) return
@@ -113,8 +120,13 @@ export default function FormularioInventario({ form, setForm, editandoId, totalI
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <InputMoneda label="₡ Costo por paquete" value={form.costoPorPaquete}
                     onChange={v => setForm({ ...form, costoPorPaquete: v })} placeholder="Ej: 7,140" />
-                <InputNumero label="Mínimo para alerta" value={form.minimo}
-                    onChange={v => setForm({ ...form, minimo: v })} placeholder="Ej: 200" />
+                <InputNumero
+                    label={`Mínimo para alerta (${uBase})`}
+                    value={form.minimo}
+                    onChange={v => setForm({ ...form, minimo: v })}
+                    placeholder={`Ej: 200 ${uBase}`}
+                    hint={uBase !== form.unidad ? `Ingresá en ${uBase}, no en ${form.unidad}` : null}
+                />
             </div>
 
             {totalInventario > 0 && (

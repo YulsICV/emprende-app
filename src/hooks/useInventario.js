@@ -20,11 +20,12 @@ export function aGramos(cantidad, unidad) {
     return n * factor
 }
 
-// Unidad menor para mostrar cuando el valor es < 1 en unidad original
-const UNIDAD_MENOR = {
-    kg: "g",
-    L: "ml",
-    lb: "oz",
+// Retorna la unidad base para mostrar al usuario
+export function unidadBase(unidad) {
+    if (unidad === "kg") return "g"
+    if (unidad === "L") return "ml"
+    if (unidad === "lb") return "oz"
+    return unidad
 }
 
 export function formatearCantidad(cantidadBase, unidad) {
@@ -33,12 +34,10 @@ export function formatearCantidad(cantidadBase, unidad) {
 
     const enUnidadOriginal = cantidadBase / factor
 
-    // Si tiene unidad menor definida y el valor es < 1, mostrar en unidad menor
-    if (UNIDAD_MENOR[unidad] && enUnidadOriginal < 1) {
-        const unidadMenor = UNIDAD_MENOR[unidad]
-        const factorMenor = CONVERSIONES_A_GRAMOS[unidadMenor]
-        const enUnidadMenor = cantidadBase / factorMenor
-        return `${parseFloat(enUnidadMenor.toFixed(2))} ${unidadMenor}`
+    if (unidad === "kg" && enUnidadOriginal < 1) return `${Math.round(cantidadBase)} g`
+    if (unidad === "L"  && enUnidadOriginal < 1) return `${Math.round(cantidadBase)} ml`
+    if (unidad === "lb" && enUnidadOriginal < 1) {
+        return `${parseFloat((cantidadBase / CONVERSIONES_A_GRAMOS["oz"]).toFixed(2))} oz`
     }
 
     const val = parseFloat(enUnidadOriginal.toFixed(2))
@@ -67,11 +66,12 @@ export function useInventario() {
     const totalInventario = numPaquetes * numTamaño
     const costoTotal      = numPaquetes * numCosto
 
+    // minimo se guarda en unidad base (g, ml, oz, etc.)
+    // cantidadBase también está en unidad base → comparación directa
     const bajoStock = inventario.filter(i => {
         if (!i.minimo) return false
         const cantidadEnBase = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
-        const minimoEnBase = aGramos(parsearNumero(i.minimo), i.unidad)
-        return cantidadEnBase <= minimoEnBase
+        return cantidadEnBase <= parsearNumero(i.minimo)
     })
 
     const itemsFiltrados = inventario.filter(i =>
@@ -92,7 +92,7 @@ export function useInventario() {
             tamañoPaquete: numTamaño,
             unidad: form.unidad,
             costoPorPaquete: numCosto,
-            minimo: numMinimo || "",
+            minimo: numMinimo || "",  // guardado en unidad base
             cantidad: cantidadTotal,
             cantidadBase,
             costoTotal: numPaquetes * numCosto,

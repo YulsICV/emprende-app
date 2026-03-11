@@ -74,14 +74,12 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                 <tbody>
                                     {items.map(i => {
                                         const cantidadEnBase = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
-                                        const minimoEnBase = i.minimo ? aGramos(parsearNumero(i.minimo), i.unidad) : null
+                                        // minimo está guardado en unidad base → comparación directa
+                                        const minimoEnBase = i.minimo ? parsearNumero(i.minimo) : null
                                         const bajo = minimoEnBase !== null && cantidadEnBase <= minimoEnBase
 
-                                        // Costo por unidad original (no por gramo)
                                         const factor = CONVERSIONES_A_GRAMOS[i.unidad] ?? 1
-                                        const costoPorUnidad = i.costoPorGramo
-                                            ? i.costoPorGramo * factor
-                                            : null
+                                        const costoPorUnidad = i.costoPorGramo ? i.costoPorGramo * factor : null
 
                                         return (
                                             <tr key={i._id} style={{ background: bajo ? "#fffbeb" : undefined }}>
