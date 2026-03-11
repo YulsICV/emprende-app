@@ -121,7 +121,7 @@ export default function FormularioInventario({ form, setForm, editandoId, totalI
                 <InputMoneda label="₡ Costo por paquete" value={form.costoPorPaquete}
                     onChange={v => setForm({ ...form, costoPorPaquete: v })} placeholder="Ej: 7,140" />
                 <InputNumero
-                    label={`Mínimo para alerta (${uBase})`}
+                    label={`Mínimo para alerta`}
                     value={form.minimo}
                     onChange={v => setForm({ ...form, minimo: v })}
                     placeholder={`Ej: 200 ${uBase}`}
