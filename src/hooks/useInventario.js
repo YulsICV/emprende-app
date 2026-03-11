@@ -13,24 +13,34 @@ const FORM_INICIAL = {
     tipo: "ingrediente"
 }
 
-function aGramos(cantidad, unidad) {
+export function aGramos(cantidad, unidad) {
     const n = parsearNumero(cantidad)
     const factor = CONVERSIONES_A_GRAMOS[unidad]
     if (!factor) return n
     return n * factor
 }
 
+// Unidad menor para mostrar cuando el valor es < 1 en unidad original
+const UNIDAD_MENOR = {
+    kg: "g",
+    L: "ml",
+    lb: "oz",
+}
+
 export function formatearCantidad(cantidadBase, unidad) {
     const factor = CONVERSIONES_A_GRAMOS[unidad]
     if (!factor) return `${cantidadBase} ${unidad}`
+
     const enUnidadOriginal = cantidadBase / factor
-    if ((unidad === "kg" || unidad === "l" || unidad === "L") && enUnidadOriginal < 1) {
-        const unidadMenor = unidad === "kg" ? "g" : "ml"
-        return `${Math.round(cantidadBase)} ${unidadMenor}`
+
+    // Si tiene unidad menor definida y el valor es < 1, mostrar en unidad menor
+    if (UNIDAD_MENOR[unidad] && enUnidadOriginal < 1) {
+        const unidadMenor = UNIDAD_MENOR[unidad]
+        const factorMenor = CONVERSIONES_A_GRAMOS[unidadMenor]
+        const enUnidadMenor = cantidadBase / factorMenor
+        return `${parseFloat(enUnidadMenor.toFixed(2))} ${unidadMenor}`
     }
-    if (unidad === "lb" && enUnidadOriginal < 1) {
-        return `${Math.round(cantidadBase / CONVERSIONES_A_GRAMOS["oz"])} oz`
-    }
+
     const val = parseFloat(enUnidadOriginal.toFixed(2))
     return `${val} ${unidad}`
 }

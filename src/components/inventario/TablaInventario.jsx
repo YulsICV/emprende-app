@@ -1,13 +1,6 @@
 import { parsearNumero } from "../../utils/parsearNumero"
-import { formatearCantidad } from "../../hooks/useInventario"
+import { formatearCantidad, aGramos } from "../../hooks/useInventario"
 import { CONVERSIONES_A_GRAMOS } from "../../data/conversiones"
-
-function aGramos(cantidad, unidad) {
-    const n = parsearNumero(cantidad)
-    const factor = CONVERSIONES_A_GRAMOS[unidad]
-    if (!factor) return n
-    return n * factor
-}
 
 const CATEGORIAS = [
     { tipo: "ingrediente", label: "🧁 Ingredientes",       color: "#6366f1" },
@@ -72,7 +65,7 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                         <th>Nombre</th>
                                         <th>Paquetes</th>
                                         <th>Disponible</th>
-                                        <th>Costo por g</th>
+                                        <th>Costo por unidad</th>
                                         <th>Costo total</th>
                                         <th>Alerta mín.</th>
                                         <th style={{ textAlign: "center" }}>Acciones</th>
@@ -83,6 +76,13 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                         const cantidadEnBase = i.cantidadBase ?? aGramos(i.cantidad, i.unidad)
                                         const minimoEnBase = i.minimo ? aGramos(parsearNumero(i.minimo), i.unidad) : null
                                         const bajo = minimoEnBase !== null && cantidadEnBase <= minimoEnBase
+
+                                        // Costo por unidad original (no por gramo)
+                                        const factor = CONVERSIONES_A_GRAMOS[i.unidad] ?? 1
+                                        const costoPorUnidad = i.costoPorGramo
+                                            ? i.costoPorGramo * factor
+                                            : null
+
                                         return (
                                             <tr key={i._id} style={{ background: bajo ? "#fffbeb" : undefined }}>
                                                 <td>
@@ -104,16 +104,16 @@ export default function TablaInventario({ inventario, itemsFiltrados, bajoStock,
                                                     </strong>
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)", fontSize: 13 }}>
-                                                    {i.costoPorGramo
-                                                        ? `₡${i.costoPorGramo.toFixed(4)}/g`
+                                                    {costoPorUnidad
+                                                        ? `₡${costoPorUnidad.toFixed(2)}/${i.unidad}`
                                                         : "—"}
                                                 </td>
                                                 <td>
                                                     {i.costoTotal ? `₡${parsearNumero(i.costoTotal).toLocaleString("es-CR")}` : "—"}
                                                 </td>
                                                 <td style={{ color: "var(--texto-suave)" }}>
-                                                    {i.minimo
-                                                        ? formatearCantidad(aGramos(parsearNumero(i.minimo), i.unidad), i.unidad)
+                                                    {minimoEnBase !== null
+                                                        ? formatearCantidad(minimoEnBase, i.unidad)
                                                         : "—"}
                                                 </td>
                                                 <td style={{ textAlign: "center" }}>
