@@ -5,6 +5,7 @@ import FormularioIngrediente from "../components/recetas/FormularioIngrediente"
 import TablaIngredientes from "../components/recetas/TablaIngredientes"
 import ListaRecetas from "../components/recetas/ListaRecetas"
 
+
 const FORM_INICIAL = {
     nombre: "", categoria: "Clásica", unidades: "",
     ingredientes: [], insumos: [],

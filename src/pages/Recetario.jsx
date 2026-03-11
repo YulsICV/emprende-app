@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { useRecetario } from "../hooks/useRecetario"
 import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
+import { normalizarEquipo } from "../utils/equipo"
 
 const PRINT_STYLE = `
 @media print {
@@ -16,17 +17,10 @@ const PRINT_STYLE = `
 }
 `
 
-const EQUIPOS = ["Horno", "Estufa", "Batidora", "Freidora de aire", "Microondas", "Ninguno", "Otro"]
 const FORM_VACIO = { nombre: "", categoria: "Clásica", unidades: "", fotoBase64: "", fotoUrl: "", equipo: [], temperatura: "", tiempoCoccion: "", ingredientes: [], pasos: [] }
 const ING_VACIO = { nombre: "", cantidadUso: "", unidadUso: "taza" }
 const UNIDADES_ING = ["taza", "g", "kg", "ml", "l", "cdta", "cda", "oz", "lb", "unidad", "pizca"]
 const UNIDADES_PAQUETE = ["g", "kg", "ml", "l", "oz", "lb", "unidad"]
-
-function normalizarEquipo(equipo) {
-    if (Array.isArray(equipo)) return equipo
-    if (equipo && typeof equipo === "string") return [equipo]
-    return []
-}
 
 function parsearNumero(valor) {
     if (!valor && valor !== 0) return 0
@@ -318,7 +312,10 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
     const sugerencias = useMemo(() => {
         if (!busquedaIng.trim()) return []
         const b = busquedaIng.toLowerCase()
-        return inventario.filter(ing => ing.nombre.toLowerCase().includes(b) && !form.ingredientes.some(i => i.nombre.toLowerCase() === ing.nombre.toLowerCase())).slice(0, 5)
+        return inventario.filter(ing =>
+            ing.nombre.toLowerCase().includes(b) &&
+            !form.ingredientes.some(i => i.nombre.toLowerCase() === ing.nombre.toLowerCase())
+        ).slice(0, 5)
     }, [busquedaIng, inventario, form.ingredientes])
 
     const set = (campo, val) => setForm(prev => ({ ...prev, [campo]: val }))
@@ -337,12 +334,6 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
         setIngForm(ING_VACIO); setBusquedaIng("")
     }
 
-    const toggleEquipo = (eq) => {
-        const actual = normalizarEquipo(form.equipo)
-        const nuevo = actual.includes(eq) ? actual.filter(e => e !== eq) : [...actual, eq]
-        set("equipo", nuevo)
-    }
-
     const handleGuardarNuevoIng = (nuevoIng) => { onAgregarIngredienteInventario(nuevoIng); setModalNuevoIng(null); agregarIngredienteALista() }
     const eliminarIng = (id) => setForm(prev => ({ ...prev, ingredientes: prev.ingredientes.filter(i => i.id !== id) }))
     const agregarPaso = () => setForm(prev => ({ ...prev, pasos: [...prev.pasos, ""] }))
@@ -351,7 +342,6 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
     const handleFoto = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => set("fotoBase64", ev.target.result); reader.readAsDataURL(file) }
 
     const foto = form.fotoBase64 || form.fotoUrl
-    const equiposSeleccionados = normalizarEquipo(form.equipo)
     const inputStyle = { width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff", color: "#2d3748" }
     const labelStyle = { fontSize: 11, fontWeight: 700, color: "#718096", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 4 }
 
@@ -365,9 +355,13 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                 <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16, flexWrap: "wrap", justifyContent: "center" }}>
                     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, width: 120, minWidth: 120, alignItems: "center" }}>
                         <div style={{ width: 120, height: 120, borderRadius: 12, border: "2px dashed #2ec4a9", background: "#e8f8f5", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {foto ? <><img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /><button type="button" onClick={() => { set("fotoBase64", ""); set("fotoUrl", "") }} style={{ all: "unset", cursor: "pointer", position: "absolute", top: 4, right: 4, background: "#e53e3e", color: "#fff", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>✕</button></> : <span style={{ fontSize: 32, opacity: 0.4 }}>📷</span>}
+                            {foto
+                                ? <><img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /><button type="button" onClick={() => { set("fotoBase64", ""); set("fotoUrl", "") }} style={{ all: "unset", cursor: "pointer", position: "absolute", top: 4, right: 4, background: "#e53e3e", color: "#fff", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>✕</button></>
+                                : <span style={{ fontSize: 32, opacity: 0.4 }}>📷</span>}
                         </div>
-                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#e8f8f5", color: "#1a9e87", border: "1.5px dashed #2ec4a9", borderRadius: 8, padding: "6px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>📁 Foto<input type="file" accept="image/*" onChange={handleFoto} style={{ display: "none" }} /></label>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#e8f8f5", color: "#1a9e87", border: "1.5px dashed #2ec4a9", borderRadius: 8, padding: "6px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                            📁 Foto<input type="file" accept="image/*" onChange={handleFoto} style={{ display: "none" }} />
+                        </label>
                         <input type="url" placeholder="O link..." value={form.fotoUrl || ""} onChange={e => { set("fotoUrl", e.target.value); set("fotoBase64", "") }} style={{ ...inputStyle, fontSize: 11, padding: "5px 8px" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -379,27 +373,10 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 16 }}>
                     <div style={{ gridColumn: "span 2" }}>
                         <span style={labelStyle}>Equipo</span>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                            {EQUIPOS.map(eq => {
-                                const seleccionado = equiposSeleccionados.includes(eq)
-                                return (
-                                    <label key={eq} style={{
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        padding: "7px 12px", borderRadius: 20, cursor: "pointer",
-                                        border: `1.5px solid ${seleccionado ? "#1a9e87" : "#e2e8f0"}`,
-                                        background: seleccionado ? "#e8f8f5" : "#fff",
-                                        fontSize: 13, fontWeight: seleccionado ? 600 : 400,
-                                        color: seleccionado ? "#1a9e87" : "#4a5568",
-                                        transition: "all 0.15s",
-                                    }}>
-                                        <input type="checkbox" checked={seleccionado}
-                                            onChange={() => toggleEquipo(eq)}
-                                            style={{ display: "none" }} />
-                                        {eq}
-                                    </label>
-                                )
-                            })}
-                        </div>
+                        <SelectorEquipo
+                            seleccionados={normalizarEquipo(form.equipo)}
+                            onChange={nuevo => set("equipo", nuevo)}
+                        />
                     </div>
                     <div><span style={labelStyle}>Temp (°C)</span><input type="number" value={form.temperatura} placeholder="180" onChange={e => set("temperatura", e.target.value)} style={inputStyle} /></div>
                     <div><span style={labelStyle}>Tiempo (min)</span><input type="number" value={form.tiempoCoccion} placeholder="25" onChange={e => set("tiempoCoccion", e.target.value)} style={inputStyle} /></div>
@@ -417,8 +394,10 @@ function FormularioRecetario({ inicial, onGuardar, onCancelar, inventario = [], 
                                 {mostrarSugerencias && sugerencias.length > 0 && (
                                     <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, marginTop: 4, zIndex: 100, boxShadow: "0 10px 40px rgba(0,0,0,0.15)", maxHeight: 200, overflowY: "auto" }}>
                                         {sugerencias.map((ing, idx) => (
-                                            <div key={ing._id || idx} onClick={() => seleccionarIng(ing)} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: idx < sugerencias.length - 1 ? "1px solid #f0f0f0" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                                                onMouseEnter={e => e.currentTarget.style.background = "#f8fffe"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                                            <div key={ing._id || idx} onClick={() => seleccionarIng(ing)}
+                                                style={{ padding: "10px 14px", cursor: "pointer", borderBottom: idx < sugerencias.length - 1 ? "1px solid #f0f0f0" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                                                onMouseEnter={e => e.currentTarget.style.background = "#f8fffe"}
+                                                onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
                                                 <span style={{ fontSize: 14, fontWeight: 500 }}>{ing.nombre}</span>
                                                 <span style={{ fontSize: 12, color: "#1a9e87", background: "#e8f8f5", padding: "2px 8px", borderRadius: 6 }}>
                                                     ₡{costoPorGramoItem(ing).toFixed(4)}/g
