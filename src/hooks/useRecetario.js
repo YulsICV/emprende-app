@@ -45,17 +45,14 @@ export function useRecetario() {
 
     const guardarReceta = async (form, editando) => {
         if (!form.nombre.trim()) return
-        console.log("🔍 editando:", editando)  // ← agregar esto
-        console.log("🔍 recetaCostoId:", editando?.recetaCostoId)
 
-        // Datos limpios para recetario (sin costos)
         const datosRecetario = {
             nombre: form.nombre,
             categoria: form.categoria,
             unidades: form.unidades,
             fotoBase64: form.fotoBase64 || "",
             fotoUrl: form.fotoUrl || "",
-            equipo: form.equipo || "",
+            equipo: form.equipo || [],
             temperatura: form.temperatura || "",
             tiempoCoccion: form.tiempoCoccion || "",
             pasos: form.pasos || [],
@@ -68,15 +65,11 @@ export function useRecetario() {
         }
 
         if (editando) {
-            // 1. Actualizar recetario
             const updated = await apiRecetario.actualizar({ ...datosRecetario, id: editando._id })
             setRecetas(prev => prev.map(r => r._id === editando._id ? updated : r))
 
-            // 2. Si tiene vínculo, recalcular costos y actualizar Receta
             const recetaCostoId = editando.recetaCostoId
             if (recetaCostoId) {
-                // Traer la receta de costos para mantener sus campos (márgenes, insumos, etc.)
-                // Recalcular costos con precios actuales del inventario
                 const ingredientesConCosto = (form.ingredientes || []).map(ing => ({
                     ...ing,
                     cantidadPaquete: inventario.find(i => i.nombre.toLowerCase() === ing.nombre.toLowerCase())?.tamañoPaquete || ing.cantidadPaquete || "",
@@ -97,7 +90,7 @@ export function useRecetario() {
                     ingredientes: ingredientesConCosto,
                     fotoBase64: form.fotoBase64 || "",
                     fotoUrl: form.fotoUrl || "",
-                    equipo: form.equipo || "",
+                    equipo: form.equipo || [],
                     temperatura: form.temperatura || "",
                     tiempoCoccion: form.tiempoCoccion || "",
                     pasos: form.pasos || [],
@@ -106,7 +99,6 @@ export function useRecetario() {
                 })
             }
         } else {
-            // Crear solo en recetario (sin vínculo a receta de costos)
             const nueva = await apiRecetario.crear(datosRecetario)
             setRecetas(prev => [nueva, ...prev])
         }
@@ -116,7 +108,6 @@ export function useRecetario() {
         await apiRecetario.eliminar(receta._id)
         setRecetas(prev => prev.filter(r => r._id !== receta._id))
 
-        // Si tiene vínculo, eliminar también la receta de costos
         if (receta.recetaCostoId) {
             await apiRecetas.eliminar(receta.recetaCostoId)
         }
