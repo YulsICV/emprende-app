@@ -70,7 +70,7 @@ function construirEntradaRecetario(form, recetaCostoId) {
         unidades: form.unidades,
         fotoBase64: form.fotoBase64 || "",
         fotoUrl: form.fotoUrl || "",
-        equipo: form.equipo || "",
+        equipo: form.equipo || [],
         temperatura: form.temperatura || "",
         tiempoCoccion: form.tiempoCoccion || "",
         pasos: form.pasos || [],
@@ -130,17 +130,17 @@ export function useRecetas() {
         const ingredientesEnriquecidos = (receta.ingredientes || []).map(ing => enriquecerIngrediente(ing, inventario))
         const insumosEnriquecidos = (receta.insumos || []).map(ins => enriquecerIngrediente(ins, inventario))
         setForm({
-            nombre: receta.nombre,
-            categoria: receta.categoria,
-            unidades: receta.unidades,
+            nombre: receta.nombre || "",
+            categoria: receta.categoria || "Clásica",
+            unidades: String(receta.unidades ?? ""),  // ← FIX: siempre string
             ingredientes: ingredientesEnriquecidos,
             insumos: insumosEnriquecidos,
-            margenMay: receta.margenMay,
-            margenMen: receta.margenMen,
+            margenMay: receta.margenMay ?? 35,
+            margenMen: receta.margenMen ?? 70,
             envioGratis: receta.envioGratis || false,
             fotoBase64: receta.fotoBase64 || "",
             fotoUrl: receta.fotoUrl || "",
-            equipo: receta.equipo || "",
+            equipo: receta.equipo || [],
             temperatura: receta.temperatura || "",
             tiempoCoccion: receta.tiempoCoccion || "",
             pasos: receta.pasos || [],
@@ -152,15 +152,15 @@ export function useRecetas() {
 
     // ── Guardar receta ──
     const guardarReceta = async () => {
-        //if (!form.nombre || !form.unidades || form.ingredientes.length === 0) return
-        if (!form.nombre || !form.unidades || form.ingredientes.length === 0) {
-            alert(`Faltan datos: nombre=${form.nombre}, unidades=${form.unidades}, ingredientes=${form.ingredientes.length}`)
+        const unidadesNum = parseFloat(form.unidades) || 0
+        if (!form.nombre || unidadesNum <= 0 || form.ingredientes.length === 0) {
+            alert("⚠️ Completá el nombre, las unidades producidas y al menos un ingrediente.")
             return
         }
 
         const datos = {
             ...form,
-            unidades: parseFloat(form.unidades) || 0,
+            unidades: unidadesNum,
             costoTotal: parseFloat(costoTotal.toFixed(2)),
             costoPorUnidad: parseFloat(costoPorUnidad.toFixed(2)),
             precioMayoreo: parseFloat(precioMayoreo),
