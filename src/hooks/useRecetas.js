@@ -152,7 +152,11 @@ export function useRecetas() {
 
     // ── Guardar receta ──
     const guardarReceta = async () => {
-        if (!form.nombre || !form.unidades || form.ingredientes.length === 0) return
+        //if (!form.nombre || !form.unidades || form.ingredientes.length === 0) return
+        if (!form.nombre || !form.unidades || form.ingredientes.length === 0) {
+            alert(`Faltan datos: nombre=${form.nombre}, unidades=${form.unidades}, ingredientes=${form.ingredientes.length}`)
+            return
+        }
 
         const datos = {
             ...form,
