@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { useRecetario } from "../hooks/useRecetario"
 import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
+import SelectorEquipo from "../components/SelectorEquipo"
 import { normalizarEquipo } from "../utils/equipo"
 
 const PRINT_STYLE = `
