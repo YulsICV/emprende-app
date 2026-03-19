@@ -1,5 +1,5 @@
-// src/components/clientes/hooks/useClientes.js
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { apiClientes, apiPedidos } from "./useApi"
 
 const FORM_INICIAL = {
     nombre: "",
@@ -12,46 +12,44 @@ const FORM_INICIAL = {
     nota: ""
 }
 
-export function useClientes(db, actualizarDb) {
+export function useClientes() {
     const [form, setForm] = useState(FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
+    const [modalAbierto, setModalAbierto] = useState(false)
+    const [confirmarEliminarId, setConfirmarEliminarId] = useState(null)
+    const [clientes, setClientes] = useState([])
+    const [pedidos, setPedidos] = useState([])
+    const [cargando, setCargando] = useState(true)
 
-    const clientes = db?.clientes || []
-    const ventas = db?.ventas || []
-    const pedidos = db?.pedidos || []
-
-    const ventasDelCliente = (nombre) => {
-        const ventasCliente = ventas.filter(v => v.cliente === nombre)
-        const pedidosCliente = pedidos.filter(p => p.cliente === nombre).map(p => ({
-            ...p,
-            descripcion: p.recetaNombre,
-            total: p.total
-        }))
-        return [...ventasCliente, ...pedidosCliente].sort((a, b) => 
-            new Date(b.fecha) - new Date(a.fecha)
-        )
-    }
-
-    const guardar = () => {
-        if (!form.nombre) return
-
-        if (editandoId) {
-            actualizarDb("clientes", clientes.map(c =>
-                c.id === editandoId ? { ...form, id: editandoId } : c
-            ))
-            setEditandoId(null)
-        } else {
-            const nuevoCliente = {
-                ...form,
-                id: crypto.randomUUID(),
-                fecha: new Date().toISOString()
-            }
-            actualizarDb("clientes", [...clientes, nuevoCliente])
+    const recargar = useCallback(async () => {
+        setCargando(true)
+        try {
+            const [c, p] = await Promise.all([
+                apiClientes.getAll(),
+                apiPedidos.getAll(),
+            ])
+            setClientes(Array.isArray(c) ? c : [])
+            setPedidos(Array.isArray(p) ? p : [])
+        } catch (err) {
+            console.error("Error cargando clientes:", err)
+        } finally {
+            setCargando(false)
         }
+    }, [])
+
+    useEffect(() => { recargar() }, [recargar])
+
+    const pedidosDelCliente = (nombre) =>
+        pedidos.filter(p => p.cliente === nombre)
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+
+    const abrirModalNuevo = () => {
         setForm(FORM_INICIAL)
+        setEditandoId(null)
+        setModalAbierto(true)
     }
 
-    const editar = (cliente) => {
+    const abrirModalEditar = (cliente) => {
         setForm({
             nombre: cliente.nombre || "",
             telefono: cliente.telefono || "",
@@ -62,29 +60,57 @@ export function useClientes(db, actualizarDb) {
             notasAlergias: cliente.notasAlergias || "",
             nota: cliente.nota || ""
         })
-        setEditandoId(cliente.id)
-        window.scrollTo({ top: 0, behavior: "smooth" })
+        setEditandoId(cliente._id)
+        setModalAbierto(true)
     }
 
-    const cancelar = () => {
+    const cerrarModal = () => {
+        setModalAbierto(false)
         setEditandoId(null)
         setForm(FORM_INICIAL)
     }
 
-    const eliminar = (id) => {
-        if (!window.confirm("¿Eliminar este cliente?")) return
-        actualizarDb("clientes", clientes.filter(c => c.id !== id))
+    const guardar = async () => {
+        if (!form.nombre.trim()) return
+        try {
+            if (editandoId) {
+                const updated = await apiClientes.actualizar({ ...form, id: editandoId })
+                setClientes(prev => prev.map(c => c._id === editandoId ? updated : c))
+            } else {
+                const nuevo = await apiClientes.crear(form)
+                setClientes(prev => [nuevo, ...prev])
+            }
+            cerrarModal()
+        } catch (err) {
+            console.error("Error guardando cliente:", err)
+            alert("❌ No se pudo guardar: " + err.message)
+        }
+    }
+
+    const eliminar = async (id) => {
+        try {
+            await apiClientes.eliminar(id)
+            setClientes(prev => prev.filter(c => c._id !== id))
+            setConfirmarEliminarId(null)
+        } catch (err) {
+            console.error("Error eliminando cliente:", err)
+            alert("❌ No se pudo eliminar: " + err.message)
+        }
     }
 
     return {
-        form,
-        setForm,
+        form, setForm,
         editandoId,
+        modalAbierto,
+        confirmarEliminarId, setConfirmarEliminarId,
         clientes,
-        ventasDelCliente,
+        pedidos,
+        cargando,
+        pedidosDelCliente,
+        abrirModalNuevo,
+        abrirModalEditar,
+        cerrarModal,
         guardar,
-        editar,
-        cancelar,
-        eliminar
+        eliminar,
     }
 }
