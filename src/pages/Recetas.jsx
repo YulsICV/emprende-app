@@ -9,7 +9,7 @@ const FORM_INICIAL = {
     nombre: "", categoria: "Clásica",
     modoRendimiento: "porciones",
     unidades: "", pesoFinal: "", unidadPeso: "g", sugerenciasUso: "",
-    ingredientes: [], insumos: [],
+    ingredientes: [],
     margenMay: 35, margenMen: 70, envioGratis: false,
     fotoBase64: "", fotoUrl: "",
     equipo: [], temperatura: "", tiempoCoccion: "",
@@ -20,14 +20,12 @@ export default function Recetas() {
     const {
         form, setForm,
         ingForm, setIngForm,
-        insumoForm, setInsumoForm,
         editandoId, setEditandoId,
         recetasCostos,
         recetario,
         inventario,
         cargando,
         costoIngredientes,
-        costoInsumos,
         costoTotal,
         costoPorUnidad,
         costoPorGramo,
@@ -42,16 +40,11 @@ export default function Recetas() {
         agregarIngrediente,
         eliminarIngrediente,
         editarIngrediente,
-        agregarInsumo,
-        eliminarInsumo,
-        editarInsumo,
         agregarAInventario,
         recargar,
     } = useRecetas()
 
-    useEffect(() => {
-        recargar()
-    }, [recargar])
+    useEffect(() => { recargar() }, [recargar])
 
     if (cargando) return (
         <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>
@@ -60,7 +53,7 @@ export default function Recetas() {
     )
 
     const esPorciones = form.modoRendimiento === "porciones"
-    const tieneItems = form.ingredientes.length > 0 || (form.insumos || []).length > 0
+    const tieneItems = form.ingredientes.length > 0
     const tieneRendimiento = esPorciones
         ? parseFloat(form.unidades) > 0
         : parseFloat(form.pesoFinal) > 0
@@ -87,20 +80,14 @@ export default function Recetas() {
                 ingForm={ingForm}
                 setIngForm={setIngForm}
                 onAgregar={agregarIngrediente}
-                insumoForm={insumoForm}
-                setInsumoForm={setInsumoForm}
-                onAgregarInsumo={agregarInsumo}
                 inventario={inventario}
                 onAgregarAInventario={agregarAInventario}
             />
 
             <TablaIngredientes
                 ingredientes={form.ingredientes}
-                insumos={form.insumos || []}
                 onEliminar={eliminarIngrediente}
                 onEditar={editarIngrediente}
-                onEliminarInsumo={eliminarInsumo}
-                onEditarInsumo={editarInsumo}
             />
 
             {tieneItems && tieneRendimiento && (
@@ -111,12 +98,8 @@ export default function Recetas() {
                             <div className="etiqueta">🧁 Costo ingredientes</div>
                         </div>
                         <div className="resumen-item">
-                            <div className="valor">₡{costoInsumos.toFixed(0)}</div>
-                            <div className="etiqueta">📦 Costo insumos</div>
-                        </div>
-                        <div className="resumen-item">
                             <div className="valor">₡{costoTotal.toFixed(0)}</div>
-                            <div className="etiqueta">Total</div>
+                            <div className="etiqueta">Total receta</div>
                         </div>
                         {esPorciones ? (
                             <>
@@ -136,7 +119,9 @@ export default function Recetas() {
                         ) : (
                             <>
                                 <div className="resumen-item">
-                                    <div className="valor">₡{form.unidadPeso === "kg" ? costoPorKg.toFixed(2) : costoPorGramo.toFixed(4)}</div>
+                                    <div className="valor">
+                                        ₡{form.unidadPeso === "kg" ? costoPorKg.toFixed(2) : costoPorGramo.toFixed(4)}
+                                    </div>
                                     <div className="etiqueta">Costo por {form.unidadPeso}</div>
                                 </div>
                                 <div className="resumen-item" style={{ background: "var(--verde-claro)" }}>

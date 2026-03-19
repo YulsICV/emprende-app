@@ -9,7 +9,7 @@ const FORM_INICIAL = {
     pesoFinal: "",
     unidadPeso: "g",
     sugerenciasUso: "",
-    ingredientes: [], insumos: [],
+    ingredientes: [],
     margenMay: 35, margenMen: 70, envioGratis: false,
     fotoBase64: "", fotoUrl: "",
     equipo: [], temperatura: "", tiempoCoccion: "",
@@ -96,7 +96,6 @@ function construirEntradaRecetario(form, recetaCostoId) {
 export function useRecetas() {
     const [form, setForm] = useState(FORM_INICIAL)
     const [ingForm, setIngForm] = useState(ING_FORM_INICIAL)
-    const [insumoForm, setInsumoForm] = useState(ING_FORM_INICIAL)
     const [editandoId, setEditandoId] = useState(null)
     const [recetasCostos, setRecetasCostos] = useState([])
     const [recetario, setRecetario] = useState([])
@@ -125,8 +124,7 @@ export function useRecetas() {
 
     // ── Cálculos ──
     const costoIngredientes = form.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
-    const costoInsumos = (form.insumos || []).reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
-    const costoTotal = costoIngredientes + costoInsumos
+    const costoTotal = costoIngredientes
 
     // Modo porciones
     const unidades = parseFloat(form.unidades) || 0
@@ -146,7 +144,6 @@ export function useRecetas() {
     // ── Editar receta ──
     const editarReceta = useCallback((receta) => {
         const ingredientesEnriquecidos = (receta.ingredientes || []).map(ing => enriquecerIngrediente(ing, inventario))
-        const insumosEnriquecidos = (receta.insumos || []).map(ins => enriquecerIngrediente(ins, inventario))
         setForm({
             nombre: receta.nombre || "",
             categoria: receta.categoria || "Clásica",
@@ -156,7 +153,6 @@ export function useRecetas() {
             unidadPeso: receta.unidadPeso || "g",
             sugerenciasUso: receta.sugerenciasUso || "",
             ingredientes: ingredientesEnriquecidos,
-            insumos: insumosEnriquecidos,
             margenMay: receta.margenMay ?? 35,
             margenMen: receta.margenMen ?? 70,
             envioGratis: receta.envioGratis || false,
@@ -193,6 +189,7 @@ export function useRecetas() {
 
         const datos = {
             ...form,
+            insumos: [], // insumos ya no van en receta
             unidades: esPorciones ? unidadesNum : null,
             pesoFinal: !esPorciones ? pesoNum : null,
             costoTotal: parseFloat(costoTotal.toFixed(2)),
@@ -285,43 +282,6 @@ export function useRecetas() {
         }))
     }
 
-    // ── Insumos ──
-    const agregarInsumo = () => {
-        if (!insumoForm.nombre || !insumoForm.cantidadUso) return
-        const item = inventario.find(i =>
-            i.nombre.toLowerCase().trim() === insumoForm.nombre.toLowerCase().trim()
-        )
-        let ins = { ...insumoForm, id: crypto.randomUUID() }
-        if (item) {
-            ins = {
-                ...ins,
-                cantidadPaquete: item.tamañoPaquete || "",
-                unidadPaquete: item.unidad || "g",
-                precioPaquete: item.costoPorPaquete || ""
-            }
-        }
-        ins.costoParcial = calcularCostoParcial(ins, CONVERSIONES_A_GRAMOS).toFixed(1)
-        setForm(prev => ({ ...prev, insumos: [...(prev.insumos || []), ins] }))
-        setInsumoForm(ING_FORM_INICIAL)
-    }
-
-    const eliminarInsumo = (id) =>
-        setForm(prev => ({ ...prev, insumos: prev.insumos.filter(i => i.id !== id) }))
-
-    const editarInsumo = (id, campo, valor) => {
-        setForm(prev => ({
-            ...prev,
-            insumos: prev.insumos.map(ins => {
-                if (ins.id !== id) return ins
-                const updated = { ...ins, [campo]: valor }
-                if (['cantidadUso', 'unidadUso', 'cantidadPaquete', 'unidadPaquete', 'precioPaquete'].includes(campo)) {
-                    updated.costoParcial = calcularCostoParcial(updated, CONVERSIONES_A_GRAMOS).toFixed(1)
-                }
-                return updated
-            })
-        }))
-    }
-
     // ── Agregar a inventario ──
     const agregarAInventario = async (nuevoItem) => {
         const yaExiste = inventario.some(i =>
@@ -335,14 +295,12 @@ export function useRecetas() {
     return {
         form, setForm,
         ingForm, setIngForm,
-        insumoForm, setInsumoForm,
         editandoId, setEditandoId,
         recetasCostos,
         recetario,
         inventario,
         cargando,
         costoIngredientes,
-        costoInsumos,
         costoTotal,
         costoPorUnidad,
         costoPorGramo,
@@ -357,9 +315,6 @@ export function useRecetas() {
         agregarIngrediente,
         eliminarIngrediente,
         editarIngrediente,
-        agregarInsumo,
-        eliminarInsumo,
-        editarInsumo,
         agregarAInventario,
         recargar,
     }

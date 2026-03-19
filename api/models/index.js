@@ -115,6 +115,10 @@ const produccionSchema = new mongoose.Schema({
     cantidad: { type: Number, required: true },
     tipo: { type: String, default: "produccion" },
     notas: { type: String },
+    insumos: { type: Array, default: [] },
+    costoReceta: { type: Number, default: 0 },
+    costoInsumos: { type: Number, default: 0 },
+    costoTotal: { type: Number, default: 0 },
 }, { timestamps: true })
 
 const ventaSchema = new mongoose.Schema({

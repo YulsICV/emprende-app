@@ -48,7 +48,8 @@ function TablaItem({ items, titulo, icono, onEliminar, onEditar }) {
                                     ₡{parseFloat(ing.costoParcial || 0).toFixed(0)}
                                 </td>
                                 <td>
-                                    <button className="btn-peligro" type="button" onClick={() => onEliminar(ing.id)}>✕</button>
+                                    <button className="btn-peligro" type="button"
+                                        onClick={() => onEliminar(ing.id)}>✕</button>
                                 </td>
                             </tr>
                         ))}
@@ -59,11 +60,11 @@ function TablaItem({ items, titulo, icono, onEliminar, onEditar }) {
     )
 }
 
-function TablaIngredientes({ ingredientes, insumos = [], onEliminar, onEditar, onEliminarInsumo, onEditarInsumo }) {
-    if (ingredientes.length === 0 && insumos.length === 0) return null
+export default function TablaIngredientes({ ingredientes, onEliminar, onEditar }) {
+    if (ingredientes.length === 0) return null
     return (
         <div className="card">
-            <h4 className="seccion-titulo">Items de la receta</h4>
+            <h4 className="seccion-titulo">🧁 Ingredientes de la receta</h4>
             <TablaItem
                 items={ingredientes}
                 titulo="Ingredientes"
@@ -71,15 +72,6 @@ function TablaIngredientes({ ingredientes, insumos = [], onEliminar, onEditar, o
                 onEliminar={onEliminar}
                 onEditar={onEditar}
             />
-            <TablaItem
-                items={insumos}
-                titulo="Insumos de empaque"
-                icono="📦"
-                onEliminar={onEliminarInsumo}
-                onEditar={onEditarInsumo}
-            />
         </div>
     )
 }
-
-export default TablaIngredientes

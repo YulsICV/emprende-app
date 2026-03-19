@@ -6,14 +6,22 @@ import HistorialProduccion from "../components/produccion/HistorialProduccion"
 export default function Produccion() {
     const {
         form, setForm,
+        insumoForm, setInsumoForm,
         recetas,
+        inventario,
         cargando,
+        recetaSeleccionada,
         stockPorReceta,
         previewDescuento,
         hayStockInsuficiente,
+        costoInsumos,
+        costoRecetaAjustado,
+        costoTotalProduccion,
         historial,
         guardar,
         eliminar,
+        agregarInsumo,
+        eliminarInsumo,
     } = useProduccion()
 
     if (cargando) return (
@@ -42,9 +50,18 @@ export default function Produccion() {
                 form={form}
                 setForm={setForm}
                 recetas={recetas}
+                insumoForm={insumoForm}
+                setInsumoForm={setInsumoForm}
+                inventario={inventario}
+                recetaSeleccionada={recetaSeleccionada}
                 previewDescuento={previewDescuento}
                 hayStockInsuficiente={hayStockInsuficiente}
+                costoInsumos={costoInsumos}
+                costoRecetaAjustado={costoRecetaAjustado}
+                costoTotalProduccion={costoTotalProduccion}
                 onGuardar={guardar}
+                onAgregarInsumo={agregarInsumo}
+                onEliminarInsumo={eliminarInsumo}
             />
 
             <HistorialProduccion
@@ -57,7 +74,7 @@ export default function Produccion() {
                     <p style={{ fontSize: 40 }}>🍩</p>
                     <p>Registrá lo que producís cada día.</p>
                     <p style={{ fontSize: 13, marginTop: 4 }}>
-                        Al registrar producción se descuentan automáticamente los ingredientes del inventario.
+                        Al registrar producción se descuentan los ingredientes del inventario y podés agregar los insumos de empaque.
                     </p>
                 </div>
             )}
