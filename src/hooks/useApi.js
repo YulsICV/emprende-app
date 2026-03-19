@@ -114,3 +114,16 @@ export const apiPedidos = {
             method: "DELETE", headers: headers(),
         }).then(r => r.json()),
 }
+// ── PRODUCCION ──
+export const apiProduccion = {
+    getAll: () =>
+        fetch(`${BASE}/produccion`, { headers: headers() }).then(r => r.json()),
+    crear: (registro) =>
+        fetch(`${BASE}/produccion`, {
+            method: "POST", headers: headers(), body: JSON.stringify(registro),
+        }).then(r => r.json()),
+    eliminar: (id) =>
+        fetch(`${BASE}/produccion?id=${id}`, {
+            method: "DELETE", headers: headers(),
+        }).then(r => r.json()),
+}
