@@ -3,11 +3,16 @@ import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
 import { apiRecetas, apiInventario, apiRecetario } from "./useApi"
 
 const FORM_INICIAL = {
-    nombre: "", categoria: "Clásica", unidades: "",
+    nombre: "", categoria: "Clásica",
+    modoRendimiento: "porciones",
+    unidades: "",
+    pesoFinal: "",
+    unidadPeso: "g",
+    sugerenciasUso: "",
     ingredientes: [], insumos: [],
     margenMay: 35, margenMen: 70, envioGratis: false,
     fotoBase64: "", fotoUrl: "",
-    equipo: "", temperatura: "", tiempoCoccion: "",
+    equipo: [], temperatura: "", tiempoCoccion: "",
     pasos: [],
     recetarioId: null,
 }
@@ -67,7 +72,11 @@ function construirEntradaRecetario(form, recetaCostoId) {
     return {
         nombre: form.nombre,
         categoria: form.categoria,
-        unidades: form.unidades,
+        unidades: form.modoRendimiento === "porciones" ? form.unidades : null,
+        pesoFinal: form.modoRendimiento === "peso" ? form.pesoFinal : null,
+        unidadPeso: form.unidadPeso,
+        modoRendimiento: form.modoRendimiento,
+        sugerenciasUso: form.sugerenciasUso || "",
         fotoBase64: form.fotoBase64 || "",
         fotoUrl: form.fotoUrl || "",
         equipo: form.equipo || [],
@@ -112,18 +121,27 @@ export function useRecetas() {
         }
     }, [])
 
-    useEffect(() => {
-        recargar()
-    }, [recargar])
+    useEffect(() => { recargar() }, [recargar])
 
     // ── Cálculos ──
     const costoIngredientes = form.ingredientes.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
     const costoInsumos = (form.insumos || []).reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
     const costoTotal = costoIngredientes + costoInsumos
+
+    // Modo porciones
     const unidades = parseFloat(form.unidades) || 0
     const costoPorUnidad = unidades > 0 ? costoTotal / unidades : 0
     const precioMayoreo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMay / 100)) : 0
     const precioMenudeo = costoPorUnidad > 0 ? Math.ceil(costoPorUnidad / (1 - form.margenMen / 100)) : 0
+
+    // Modo peso
+    const pesoFinal = parseFloat(form.pesoFinal) || 0
+    const factorPeso = form.unidadPeso === "kg" ? 1000 : 1
+    const pesoEnGramos = pesoFinal * factorPeso
+    const costoPorGramo = pesoEnGramos > 0 ? costoTotal / pesoEnGramos : 0
+    const costoPorKg = costoPorGramo * 1000
+    const precioMayoreoPeso = costoPorGramo > 0 ? Math.ceil((costoPorGramo / (1 - form.margenMay / 100)) * factorPeso) : 0
+    const precioMenudeoPeso = costoPorGramo > 0 ? Math.ceil((costoPorGramo / (1 - form.margenMen / 100)) * factorPeso) : 0
 
     // ── Editar receta ──
     const editarReceta = useCallback((receta) => {
@@ -132,7 +150,11 @@ export function useRecetas() {
         setForm({
             nombre: receta.nombre || "",
             categoria: receta.categoria || "Clásica",
-            unidades: String(receta.unidades ?? ""),  // ← FIX: siempre string
+            modoRendimiento: receta.modoRendimiento || "porciones",
+            unidades: String(receta.unidades ?? ""),
+            pesoFinal: String(receta.pesoFinal ?? ""),
+            unidadPeso: receta.unidadPeso || "g",
+            sugerenciasUso: receta.sugerenciasUso || "",
             ingredientes: ingredientesEnriquecidos,
             insumos: insumosEnriquecidos,
             margenMay: receta.margenMay ?? 35,
@@ -152,19 +174,32 @@ export function useRecetas() {
 
     // ── Guardar receta ──
     const guardarReceta = async () => {
+        const esPorciones = form.modoRendimiento === "porciones"
         const unidadesNum = parseFloat(form.unidades) || 0
-        if (!form.nombre || unidadesNum <= 0 || form.ingredientes.length === 0) {
-            alert("⚠️ Completá el nombre, las unidades producidas y al menos un ingrediente.")
+        const pesoNum = parseFloat(form.pesoFinal) || 0
+
+        if (!form.nombre || form.ingredientes.length === 0) {
+            alert("⚠️ Completá el nombre y al menos un ingrediente.")
+            return
+        }
+        if (esPorciones && unidadesNum <= 0) {
+            alert("⚠️ Ingresá las unidades producidas.")
+            return
+        }
+        if (!esPorciones && pesoNum <= 0) {
+            alert("⚠️ Ingresá el peso final de la mezcla.")
             return
         }
 
         const datos = {
             ...form,
-            unidades: unidadesNum,
+            unidades: esPorciones ? unidadesNum : null,
+            pesoFinal: !esPorciones ? pesoNum : null,
             costoTotal: parseFloat(costoTotal.toFixed(2)),
-            costoPorUnidad: parseFloat(costoPorUnidad.toFixed(2)),
-            precioMayoreo: parseFloat(precioMayoreo),
-            precioMenudeo: parseFloat(precioMenudeo),
+            costoPorUnidad: esPorciones ? parseFloat(costoPorUnidad.toFixed(2)) : null,
+            costoPorGramo: !esPorciones ? parseFloat(costoPorGramo.toFixed(4)) : null,
+            precioMayoreo: esPorciones ? parseFloat(precioMayoreo) : parseFloat(precioMayoreoPeso),
+            precioMenudeo: esPorciones ? parseFloat(precioMenudeo) : parseFloat(precioMenudeoPeso),
             fecha: new Date().toISOString()
         }
 
@@ -207,7 +242,6 @@ export function useRecetas() {
         const receta = recetasCostos.find(r => r._id === id)
         await apiRecetas.eliminar(id)
         setRecetasCostos(prev => prev.filter(r => r._id !== id))
-
         if (receta?.recetarioId) {
             await apiRecetario.eliminar(receta.recetarioId)
             setRecetario(prev => prev.filter(r => r._id !== receta.recetarioId))
@@ -311,8 +345,12 @@ export function useRecetas() {
         costoInsumos,
         costoTotal,
         costoPorUnidad,
+        costoPorGramo,
+        costoPorKg,
         precioMayoreo,
         precioMenudeo,
+        precioMayoreoPeso,
+        precioMenudeoPeso,
         guardarReceta,
         eliminarReceta,
         editarReceta,

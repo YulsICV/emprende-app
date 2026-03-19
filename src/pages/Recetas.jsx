@@ -5,13 +5,14 @@ import FormularioIngrediente from "../components/recetas/FormularioIngrediente"
 import TablaIngredientes from "../components/recetas/TablaIngredientes"
 import ListaRecetas from "../components/recetas/ListaRecetas"
 
-
 const FORM_INICIAL = {
-    nombre: "", categoria: "Clásica", unidades: "",
+    nombre: "", categoria: "Clásica",
+    modoRendimiento: "porciones",
+    unidades: "", pesoFinal: "", unidadPeso: "g", sugerenciasUso: "",
     ingredientes: [], insumos: [],
     margenMay: 35, margenMen: 70, envioGratis: false,
     fotoBase64: "", fotoUrl: "",
-    equipo: "", temperatura: "", tiempoCoccion: "",
+    equipo: [], temperatura: "", tiempoCoccion: "",
     pasos: [], recetarioId: null,
 }
 
@@ -29,8 +30,12 @@ export default function Recetas() {
         costoInsumos,
         costoTotal,
         costoPorUnidad,
+        costoPorGramo,
+        costoPorKg,
         precioMayoreo,
         precioMenudeo,
+        precioMayoreoPeso,
+        precioMenudeoPeso,
         guardarReceta,
         eliminarReceta,
         editarReceta,
@@ -44,16 +49,21 @@ export default function Recetas() {
         recargar,
     } = useRecetas()
 
-    // ← Recarga datos frescos cada vez que se entra al módulo
     useEffect(() => {
         recargar()
-    }, [])
+    }, [recargar])
 
     if (cargando) return (
         <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>
             ⏳ Cargando recetas...
         </div>
     )
+
+    const esPorciones = form.modoRendimiento === "porciones"
+    const tieneItems = form.ingredientes.length > 0 || (form.insumos || []).length > 0
+    const tieneRendimiento = esPorciones
+        ? parseFloat(form.unidades) > 0
+        : parseFloat(form.pesoFinal) > 0
 
     return (
         <div>
@@ -67,6 +77,10 @@ export default function Recetas() {
                 precioMayoreo={precioMayoreo}
                 precioMenudeo={precioMenudeo}
                 costoPorUnidad={costoPorUnidad}
+                precioMayoreoPeso={precioMayoreoPeso}
+                precioMenudeoPeso={precioMenudeoPeso}
+                costoPorGramo={costoPorGramo}
+                costoPorKg={costoPorKg}
             />
 
             <FormularioIngrediente
@@ -89,7 +103,7 @@ export default function Recetas() {
                 onEditarInsumo={editarInsumo}
             />
 
-            {(form.ingredientes.length > 0 || (form.insumos || []).length > 0) && form.unidades > 0 && (
+            {tieneItems && tieneRendimiento && (
                 <div className="card">
                     <div className="resumen-grid">
                         <div className="resumen-item">
@@ -104,18 +118,37 @@ export default function Recetas() {
                             <div className="valor">₡{costoTotal.toFixed(0)}</div>
                             <div className="etiqueta">Total</div>
                         </div>
-                        <div className="resumen-item">
-                            <div className="valor">₡{costoPorUnidad.toFixed(0)}</div>
-                            <div className="etiqueta">Costo por unidad</div>
-                        </div>
-                        <div className="resumen-item" style={{ background: "var(--verde-claro)" }}>
-                            <div className="valor" style={{ color: "var(--verde-oscuro)" }}>₡{precioMayoreo}</div>
-                            <div className="etiqueta">Precio mayoreo</div>
-                        </div>
-                        <div className="resumen-item" style={{ background: "#fff8ee" }}>
-                            <div className="valor" style={{ color: "var(--canela)" }}>₡{precioMenudeo}</div>
-                            <div className="etiqueta">Precio menudeo</div>
-                        </div>
+                        {esPorciones ? (
+                            <>
+                                <div className="resumen-item">
+                                    <div className="valor">₡{costoPorUnidad.toFixed(0)}</div>
+                                    <div className="etiqueta">Costo por unidad</div>
+                                </div>
+                                <div className="resumen-item" style={{ background: "var(--verde-claro)" }}>
+                                    <div className="valor" style={{ color: "var(--verde-oscuro)" }}>₡{precioMayoreo}</div>
+                                    <div className="etiqueta">Precio mayoreo/u</div>
+                                </div>
+                                <div className="resumen-item" style={{ background: "#fff8ee" }}>
+                                    <div className="valor" style={{ color: "var(--canela)" }}>₡{precioMenudeo}</div>
+                                    <div className="etiqueta">Precio menudeo/u</div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="resumen-item">
+                                    <div className="valor">₡{form.unidadPeso === "kg" ? costoPorKg.toFixed(2) : costoPorGramo.toFixed(4)}</div>
+                                    <div className="etiqueta">Costo por {form.unidadPeso}</div>
+                                </div>
+                                <div className="resumen-item" style={{ background: "var(--verde-claro)" }}>
+                                    <div className="valor" style={{ color: "var(--verde-oscuro)" }}>₡{precioMayoreoPeso}</div>
+                                    <div className="etiqueta">Mayoreo/{form.unidadPeso}</div>
+                                </div>
+                                <div className="resumen-item" style={{ background: "#fff8ee" }}>
+                                    <div className="valor" style={{ color: "var(--canela)" }}>₡{precioMenudeoPeso}</div>
+                                    <div className="etiqueta">Menudeo/{form.unidadPeso}</div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

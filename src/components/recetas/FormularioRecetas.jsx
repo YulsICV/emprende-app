@@ -68,7 +68,9 @@ function SelectorCategoria({ value, onChange, categorias, onAgregarCategoria }) 
 
 export default function FormularioRecetas({
     form, setForm, recetario = [], onJalarReceta,
-    precioMayoreo = 0, precioMenudeo = 0, costoPorUnidad = 0
+    precioMayoreo = 0, precioMenudeo = 0, costoPorUnidad = 0,
+    precioMayoreoPeso = 0, precioMenudeoPeso = 0,
+    costoPorGramo = 0, costoPorKg = 0,
 }) {
     const [categorias, setCategorias] = useState(() => {
         const saved = localStorage.getItem("categorias")
@@ -133,6 +135,8 @@ export default function FormularioRecetas({
         setForm(prev => ({ ...prev, pasos: (prev.pasos || []).filter((_, idx) => idx !== i) }))
 
     const foto = form.fotoBase64 || form.fotoUrl
+    const esPorciones = form.modoRendimiento === "porciones"
+    const mostrarPrecios = esPorciones ? costoPorUnidad > 0 : costoPorGramo > 0
 
     return (
         <div style={{
@@ -176,6 +180,7 @@ export default function FormularioRecetas({
                 </label>
             </div>
 
+            {/* ── FOTO + DATOS BÁSICOS ── */}
             <div style={{
                 display: "flex", gap: 20, alignItems: "flex-start", justifyContent: "center",
                 marginBottom: 16, flexWrap: "wrap",
@@ -275,20 +280,80 @@ export default function FormularioRecetas({
                         onAgregarCategoria={agregarCategoria}
                     />
 
+                    {/* ── MODO RENDIMIENTO ── */}
                     <div>
-                        <span style={labelStyle}>Unidades producidas</span>
-                        <input type="number" value={form.unidades} placeholder="Ej: 24"
-                            onChange={e => setForm(prev => ({ ...prev, unidades: e.target.value }))}
-                            style={inputStyle} />
+                        <span style={labelStyle}>Modo de rendimiento</span>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            {[
+                                { valor: "porciones", label: "🔢 Por porciones" },
+                                { valor: "peso", label: "⚖️ Por peso" },
+                            ].map(({ valor, label }) => (
+                                <button key={valor} type="button"
+                                    onClick={() => setForm(prev => ({ ...prev, modoRendimiento: valor }))}
+                                    style={{
+                                        flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
+                                        border: `2px solid ${form.modoRendimiento === valor ? "#1a9e87" : "#e2e8f0"}`,
+                                        background: form.modoRendimiento === valor ? "#e8f8f5" : "transparent",
+                                        color: form.modoRendimiento === valor ? "#1a9e87" : "#718096",
+                                        fontSize: 13, fontWeight: form.modoRendimiento === valor ? 700 : 400,
+                                        transition: "all 0.15s",
+                                    }}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
+
+                    {/* ── CAMPO SEGÚN MODO ── */}
+                    {esPorciones ? (
+                        <div>
+                            <span style={labelStyle}>Unidades producidas</span>
+                            <input type="number" value={form.unidades} placeholder="Ej: 24"
+                                onChange={e => setForm(prev => ({ ...prev, unidades: e.target.value }))}
+                                style={inputStyle} />
+                        </div>
+                    ) : (
+                        <div>
+                            <span style={labelStyle}>Peso final de la mezcla</span>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <input type="number" value={form.pesoFinal} placeholder="Ej: 800"
+                                    onChange={e => setForm(prev => ({ ...prev, pesoFinal: e.target.value }))}
+                                    style={{ ...inputStyle, flex: 1 }} />
+                                <select value={form.unidadPeso}
+                                    onChange={e => setForm(prev => ({ ...prev, unidadPeso: e.target.value }))}
+                                    style={{ ...inputStyle, width: 70, flexShrink: 0 }}>
+                                    <option value="g">g</option>
+                                    <option value="kg">kg</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── SUGERENCIAS DE USO (solo modo peso) ── */}
+                    {!esPorciones && (
+                        <div>
+                            <span style={labelStyle}>Sugerencias de uso</span>
+                            <textarea
+                                value={form.sugerenciasUso || ""}
+                                onChange={e => setForm(prev => ({ ...prev, sugerenciasUso: e.target.value }))}
+                                placeholder={"Ej: Molde 20cm → 1 torta\nMolde 15cm → 2 tortas\nCápsulas #7 → ~18 unidades"}
+                                rows={3}
+                                style={{
+                                    ...inputStyle, resize: "vertical",
+                                    fontFamily: "inherit", lineHeight: 1.5
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
+            {/* ── MÁRGENES ── */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
-                <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", marginBottom: 12, letterSpacing: 0.5, margin: "0 0 12px 0" }}>
+                <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", margin: "0 0 12px 0", letterSpacing: 0.5 }}>
                     💰 MÁRGENES DE GANANCIA
                 </p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: costoPorUnidad > 0 ? 12 : 0 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: mostrarPrecios ? 12 : 0 }}>
                     <div style={{ display: "flex", flexDirection: "column" }}>
                         <span style={labelStyle}>Margen mayoreo (%)</span>
                         <input type="number" value={form.margenMay}
@@ -302,28 +367,57 @@ export default function FormularioRecetas({
                             style={inputStyle} />
                     </div>
                 </div>
-                {costoPorUnidad > 0 && (
+
+                {mostrarPrecios && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div style={{
-                            background: "#e8f8f5", borderRadius: 10, padding: "10px 14px",
-                            borderLeft: "3px solid var(--acento)",
-                        }}>
-                            <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>PRECIO MAYOREO</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--verde-oscuro)" }}>₡{precioMayoreo}</div>
-                        </div>
-                        <div style={{
-                            background: "#fff8ee", borderRadius: 10, padding: "10px 14px",
-                            borderLeft: "3px solid var(--canela)",
-                        }}>
-                            <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>PRECIO MENUDEO</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--canela)" }}>₡{precioMenudeo}</div>
-                        </div>
+                        {esPorciones ? (
+                            <>
+                                <div style={{
+                                    background: "#e8f8f5", borderRadius: 10, padding: "10px 14px",
+                                    borderLeft: "3px solid var(--acento)",
+                                }}>
+                                    <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>PRECIO MAYOREO/u</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--verde-oscuro)" }}>₡{precioMayoreo}</div>
+                                </div>
+                                <div style={{
+                                    background: "#fff8ee", borderRadius: 10, padding: "10px 14px",
+                                    borderLeft: "3px solid var(--canela)",
+                                }}>
+                                    <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>PRECIO MENUDEO/u</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--canela)" }}>₡{precioMenudeo}</div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{
+                                    background: "#e8f8f5", borderRadius: 10, padding: "10px 14px",
+                                    borderLeft: "3px solid var(--acento)",
+                                }}>
+                                    <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>MAYOREO/{form.unidadPeso}</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--verde-oscuro)" }}>₡{precioMayoreoPeso}</div>
+                                    <div style={{ fontSize: 11, color: "#718096", marginTop: 2 }}>
+                                        Costo: ₡{form.unidadPeso === "kg" ? costoPorKg.toFixed(2) : costoPorGramo.toFixed(4)}/{form.unidadPeso}
+                                    </div>
+                                </div>
+                                <div style={{
+                                    background: "#fff8ee", borderRadius: 10, padding: "10px 14px",
+                                    borderLeft: "3px solid var(--canela)",
+                                }}>
+                                    <div style={{ fontSize: 11, color: "#718096", fontWeight: 700, marginBottom: 2 }}>MENUDEO/{form.unidadPeso}</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--canela)" }}>₡{precioMenudeoPeso}</div>
+                                    <div style={{ fontSize: 11, color: "#718096", marginTop: 2 }}>
+                                        Total mezcla: ₡{(costoPorGramo * (parseFloat(form.pesoFinal) || 0) * (form.unidadPeso === "kg" ? 1000 : 1)).toFixed(0)}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
 
+            {/* ── CONDICIONES DE PREPARACIÓN ── */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
-                <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", marginBottom: 12, margin: "0 0 12px 0", letterSpacing: 0.5 }}>
+                <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", margin: "0 0 12px 0", letterSpacing: 0.5 }}>
                     🍳 CONDICIONES DE PREPARACIÓN
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -349,6 +443,7 @@ export default function FormularioRecetas({
                 </div>
             </div>
 
+            {/* ── PASOS ── */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <p style={{ fontWeight: 700, fontSize: 11, color: "#718096", letterSpacing: 0.5, margin: 0 }}>
@@ -364,9 +459,7 @@ export default function FormularioRecetas({
                     </button>
                 </div>
                 {(!form.pasos || form.pasos.length === 0) && (
-                    <p style={{ fontSize: 13, color: "#718096", fontStyle: "italic" }}>
-                        Sin pasos aún.
-                    </p>
+                    <p style={{ fontSize: 13, color: "#718096", fontStyle: "italic" }}>Sin pasos aún.</p>
                 )}
                 {(form.pasos || []).map((paso, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10 }}>
