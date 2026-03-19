@@ -17,27 +17,27 @@ const inventarioSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 const recetaSchema = new mongoose.Schema({
-    negocioId:     { type: String, required: true, index: true },
-    nombre:        { type: String, required: true },
-    categoria:     { type: String },
-    unidades:      { type: Number },
-    ingredientes:  { type: Array, default: [] },
-    insumos:       { type: Array, default: [] },
-    margenMay:     { type: Number, default: 35 },
-    margenMen:     { type: Number, default: 70 },
-    envioGratis:   { type: Boolean, default: false },
-    fotoBase64:    { type: String },
-    fotoUrl:       { type: String },
-    equipo:        { type: Array, default: [] },      // ← Array
-    temperatura:   { type: Number },
-    tiempoCoccion: { type: Number },
-    pasos:         { type: Array, default: [] },
-    costoTotal:    { type: Number },
-    costoPorUnidad:{ type: Number },
-    precioMayoreo: { type: Number },
-    precioMenudeo: { type: Number },
-    recetarioId:   { type: String },
-    fecha:         { type: Date, default: Date.now },
+    negocioId:      { type: String, required: true, index: true },
+    nombre:         { type: String, required: true },
+    categoria:      { type: String },
+    unidades:       { type: Number },
+    ingredientes:   { type: Array, default: [] },
+    insumos:        { type: Array, default: [] },
+    margenMay:      { type: Number, default: 35 },
+    margenMen:      { type: Number, default: 70 },
+    envioGratis:    { type: Boolean, default: false },
+    fotoBase64:     { type: String },
+    fotoUrl:        { type: String },
+    equipo:         { type: Array, default: [] },
+    temperatura:    { type: Number },
+    tiempoCoccion:  { type: Number },
+    pasos:          { type: Array, default: [] },
+    costoTotal:     { type: Number },
+    costoPorUnidad: { type: Number },
+    precioMayoreo:  { type: Number },
+    precioMenudeo:  { type: Number },
+    recetarioId:    { type: String },
+    fecha:          { type: Date, default: Date.now },
 }, { timestamps: true })
 
 const recetarioSchema = new mongoose.Schema({
@@ -48,7 +48,7 @@ const recetarioSchema = new mongoose.Schema({
     ingredientes:  { type: Array, default: [] },
     fotoBase64:    { type: String },
     fotoUrl:       { type: String },
-    equipo:        { type: Array, default: [] },      // ← Array
+    equipo:        { type: Array, default: [] },
     temperatura:   { type: Number },
     tiempoCoccion: { type: Number },
     pasos:         { type: Array, default: [] },
@@ -56,14 +56,46 @@ const recetarioSchema = new mongoose.Schema({
     fecha:         { type: Date, default: Date.now },
 }, { timestamps: true })
 
+const clienteSchema = new mongoose.Schema({
+    negocioId:    { type: String, required: true, index: true },
+    nombre:       { type: String, required: true },
+    telefono:     { type: String },
+    correo:       { type: String },
+    direccion:    { type: String },
+    tipo:         { type: String, default: "individual" },
+    alergias:     { type: Boolean, default: false },
+    notasAlergias:{ type: String },
+    nota:         { type: String },
+    fecha:        { type: Date, default: Date.now },
+}, { timestamps: true })
+
 const pedidoSchema = new mongoose.Schema({
-    negocioId:     { type: String, required: true, index: true },
-    clienteNombre: { type: String },
-    recetaNombre:  { type: String },
-    cantidad:      { type: Number },
-    estado:        { type: String, default: "pendiente" },
-    total:         { type: Number },
-    fecha:         { type: Date, default: Date.now },
+    negocioId:       { type: String, required: true, index: true },
+    fechaEntrega:    { type: String },
+    cliente:         { type: String },
+    clienteId:       { type: String },
+    telefono:        { type: String },
+    correo:          { type: String },
+    recetaId:        { type: String },
+    recetaNombre:    { type: String },
+    recetaUnidades:  { type: Number },
+    cantidad:        { type: Number },
+    estado:          { type: String, default: "pendiente" },
+    metodoPago:      { type: String, default: "SINPE" },
+    tipoEnvio:       { type: String, default: "recogido" },
+    envio:           { type: Number, default: 0 },
+    anticipo:        { type: Number, default: 0 },
+    total:           { type: Number, default: 0 },
+    saldoPendiente:  { type: Number, default: 0 },
+    tematica:        { type: String },
+    costoTematica:   { type: Number, default: 0 },
+    colores:         { type: String },
+    costoEmpaque:    { type: Number, default: 0 },
+    especificaciones:{ type: String },
+    cargoCambio:     { type: Number, default: 0 },
+    motivoCambio:    { type: String },
+    notasInternas:   { type: String },
+    fecha:           { type: Date, default: Date.now },
 }, { timestamps: true })
 
 const usuarioSchema = new mongoose.Schema({
@@ -86,5 +118,6 @@ const usuarioSchema = new mongoose.Schema({
 export const Inventario = mongoose.models.Inventario || mongoose.model("Inventario", inventarioSchema)
 export const Receta     = mongoose.models.Receta     || mongoose.model("Receta",     recetaSchema)
 export const Recetario  = mongoose.models.Recetario  || mongoose.model("Recetario",  recetarioSchema)
+export const Cliente    = mongoose.models.Cliente    || mongoose.model("Cliente",    clienteSchema)
 export const Pedido     = mongoose.models.Pedido     || mongoose.model("Pedido",     pedidoSchema)
 export const Usuario    = mongoose.models.Usuario    || mongoose.model("Usuario",    usuarioSchema)
