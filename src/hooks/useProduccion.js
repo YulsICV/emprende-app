@@ -8,7 +8,7 @@ const FORM_INICIAL = {
     cantidad: "",
     notas: "",
     tipo: "produccion",
-    insumos: [], // ← nuevo
+    insumos: [],
 }
 
 const INSUMO_FORM_INICIAL = {
@@ -67,7 +67,6 @@ export function useProduccion() {
 
     const recetaSeleccionada = recetas.find(r => r._id === form.recetaId)
 
-    // Stock disponible por receta
     const stockPorReceta = recetas.map(receta => {
         const registros = produccion.filter(p => p.recetaId === receta._id)
         const totalProducido = registros
@@ -83,7 +82,6 @@ export function useProduccion() {
         return { receta, totalProducido, totalPerdido, totalVendidoPedidos, disponible }
     }).filter(r => r.totalProducido > 0)
 
-    // Preview de ingredientes que se descontarían
     const previewDescuento = recetaSeleccionada && parseInt(form.cantidad) > 0 ? (() => {
         const factor = parseInt(form.cantidad) / (parseInt(recetaSeleccionada.unidades) || 1)
         return (recetaSeleccionada.ingredientes || []).map(ing => {
@@ -98,10 +96,7 @@ export function useProduccion() {
 
     const hayStockInsuficiente = previewDescuento.some(i => !i.alcanza)
 
-    // Costo de insumos agregados
     const costoInsumos = form.insumos.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
-
-    // Costo total producción = costo receta + insumos
     const costoReceta = recetaSeleccionada?.costoTotal || 0
     const cantidadNum = parseInt(form.cantidad) || 0
     const unidadesReceta = parseInt(recetaSeleccionada?.unidades) || 1
@@ -109,7 +104,6 @@ export function useProduccion() {
     const costoRecetaAjustado = costoReceta * factorCantidad
     const costoTotalProduccion = costoRecetaAjustado + costoInsumos
 
-    // Agregar insumo al form
     const agregarInsumo = () => {
         if (!insumoForm.nombre || !insumoForm.cantidadUso) return
         const item = inventario.find(i =>
@@ -153,35 +147,46 @@ export function useProduccion() {
         })
         setProduccion(prev => [nuevo, ...prev])
 
-        // Descontar ingredientes + insumos del inventario
+        // ── FIX: actualizar inventario local sin recargar ──
         if (form.tipo === "produccion" && inventario.length > 0) {
             const factor = cantidad / (parseInt(receta.unidades) || 1)
             const ingredientes = receta.ingredientes || []
             const insumos = form.insumos || []
 
-            const actualizaciones = inventario
-                .map(item => {
-                    const usadoIng = ingredientes.find(i =>
-                        i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
-                    )
-                    const usadoIns = insumos.find(i =>
-                        i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
-                    )
-                    if (!usadoIng && !usadoIns) return null
+            // Calcular nuevas cantidades
+            const cambios = {}
+            inventario.forEach(item => {
+                const usadoIng = ingredientes.find(i =>
+                    i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
+                )
+                const usadoIns = insumos.find(i =>
+                    i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
+                )
+                if (!usadoIng && !usadoIns) return
 
-                    let consumo = 0
-                    if (usadoIng) consumo += (parseFloat(usadoIng.cantidadUso) || 0) * factor
-                    if (usadoIns) consumo += parseFloat(usadoIns.cantidadUso) || 0
+                let consumo = 0
+                if (usadoIng) consumo += (parseFloat(usadoIng.cantidadUso) || 0) * factor
+                if (usadoIns) consumo += parseFloat(usadoIns.cantidadUso) || 0
 
-                    const nuevaCantidad = parseFloat(
-                        Math.max(0, (parseFloat(item.cantidad) || 0) - consumo).toFixed(2)
-                    )
-                    return apiInventario.actualizar({ id: item._id, cantidad: nuevaCantidad, cantidadBase: nuevaCantidad })
-                })
-                .filter(Boolean)
+                const nuevaCantidad = parseFloat(
+                    Math.max(0, (parseFloat(item.cantidad) || 0) - consumo).toFixed(2)
+                )
+                cambios[item._id] = nuevaCantidad
+            })
 
-            await Promise.all(actualizaciones)
-            recargar()
+            // Enviar actualizaciones a la API
+            await Promise.all(
+                Object.entries(cambios).map(([id, nuevaCantidad]) =>
+                    apiInventario.actualizar({ id, cantidad: nuevaCantidad, cantidadBase: nuevaCantidad })
+                )
+            )
+
+            // Actualizar inventario local sin recargar toda la página
+            setInventario(prev => prev.map(item =>
+                cambios[item._id] !== undefined
+                    ? { ...item, cantidad: cambios[item._id], cantidadBase: cambios[item._id] }
+                    : item
+            ))
         }
 
         setForm(FORM_INICIAL)
@@ -193,7 +198,6 @@ export function useProduccion() {
         setProduccion(prev => prev.filter(p => p._id !== id))
     }
 
-    // Historial agrupado por fecha
     const historial = produccion
         .slice()
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
