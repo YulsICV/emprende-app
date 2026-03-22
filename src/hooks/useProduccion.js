@@ -1,217 +1,12 @@
-import { useState, useEffect, useCallback } from "react"
-import { CONVERSIONES_A_GRAMOS } from "../data/conversiones"
-import { apiProduccion, apiRecetas, apiInventario, apiPedidos } from "./useApi"
+import { useProduccion } from "../hooks/useProduccion"
+import StockDisponible from "../components/produccion/StockDisponible"
+import FormularioProduccion from "../components/produccion/FormularioProduccion"
+import HistorialProduccion from "../components/produccion/HistorialProduccion"
 
-const FORM_INICIAL = {
-    fecha: new Date().toISOString().split("T")[0],
-    recetaId: "",
-    cantidad: "",
-    notas: "",
-    tipo: "produccion",
-    insumos: [],
-}
-
-const INSUMO_FORM_INICIAL = {
-    nombre: "", cantidadUso: "", unidadUso: "unidad",
-    cantidadPaquete: "", unidadPaquete: "unidad", precioPaquete: ""
-}
-
-function calcularCostoParcial(item) {
-    const cantidadUso = parseFloat(item.cantidadUso) || 0
-    const cantidadPaquete = parseFloat(item.cantidadPaquete) || 0
-    const precioPaquete = parseFloat(item.precioPaquete) || 0
-    if (!cantidadUso || !cantidadPaquete || !precioPaquete) return 0
-    const enGramosUso = CONVERSIONES_A_GRAMOS[item.unidadUso]
-    const enGramosPaquete = CONVERSIONES_A_GRAMOS[item.unidadPaquete]
-    let costo
-    if (enGramosUso == null || enGramosPaquete == null) {
-        costo = (precioPaquete / cantidadPaquete) * cantidadUso
-    } else {
-        const usoEnGramos = cantidadUso * enGramosUso
-        const paqueteEnGramos = cantidadPaquete * enGramosPaquete
-        costo = (precioPaquete / paqueteEnGramos) * usoEnGramos
-    }
-    return isNaN(costo) ? 0 : costo
-}
-
-export function useProduccion() {
-    const [form, setForm] = useState(FORM_INICIAL)
-    const [insumoForm, setInsumoForm] = useState(INSUMO_FORM_INICIAL)
-    const [produccion, setProduccion] = useState([])
-    const [recetas, setRecetas] = useState([])
-    const [inventario, setInventario] = useState([])
-    const [pedidos, setPedidos] = useState([])
-    const [cargando, setCargando] = useState(true)
-
-    const recargar = useCallback(async () => {
-        setCargando(true)
-        try {
-            const [prod, rec, inv, ped] = await Promise.all([
-                apiProduccion.getAll(),
-                apiRecetas.getAll(),
-                apiInventario.getAll(),
-                apiPedidos.getAll(),
-            ])
-            setProduccion(Array.isArray(prod) ? prod : [])
-            setRecetas(Array.isArray(rec) ? rec : [])
-            setInventario(Array.isArray(inv) ? inv : [])
-            setPedidos(Array.isArray(ped) ? ped : [])
-        } catch (err) {
-            console.error("Error cargando producción:", err)
-        } finally {
-            setCargando(false)
-        }
-    }, [])
-
-    useEffect(() => { recargar() }, [recargar])
-
-    const recetaSeleccionada = recetas.find(r => r._id === form.recetaId)
-
-    const stockPorReceta = recetas.map(receta => {
-        const registros = produccion.filter(p => p.recetaId === receta._id)
-        const totalProducido = registros
-            .filter(p => p.tipo === "produccion")
-            .reduce((s, p) => s + (parseInt(p.cantidad) || 0), 0)
-        const totalPerdido = registros
-            .filter(p => p.tipo === "perdida")
-            .reduce((s, p) => s + (parseInt(p.cantidad) || 0), 0)
-        const totalVendidoPedidos = pedidos
-            .filter(p => p.recetaNombre === receta.nombre && p.estado === "entregado")
-            .reduce((s, p) => s + (parseInt(p.cantidad) || 0), 0)
-        const disponible = totalProducido - totalPerdido - totalVendidoPedidos
-        return { receta, totalProducido, totalPerdido, totalVendidoPedidos, disponible }
-    }).filter(r => r.totalProducido > 0)
-
-    const previewDescuento = recetaSeleccionada && parseInt(form.cantidad) > 0 ? (() => {
-        const factor = parseInt(form.cantidad) / (parseInt(recetaSeleccionada.unidades) || 1)
-        return (recetaSeleccionada.ingredientes || []).map(ing => {
-            const consumo = (parseFloat(ing.cantidadUso) || 0) * factor
-            const itemInv = inventario.find(i =>
-                i.nombre.toLowerCase().trim() === ing.nombre.toLowerCase().trim()
-            )
-            const stockActual = parseFloat(itemInv?.cantidad || 0)
-            return { nombre: ing.nombre, consumo, unidad: ing.unidadUso, stockActual, alcanza: stockActual >= consumo }
-        })
-    })() : []
-
-    const hayStockInsuficiente = previewDescuento.some(i => !i.alcanza)
-
-    const costoInsumos = form.insumos.reduce((s, i) => s + parseFloat(i.costoParcial || 0), 0)
-    const costoReceta = recetaSeleccionada?.costoTotal || 0
-    const cantidadNum = parseInt(form.cantidad) || 0
-    const unidadesReceta = parseInt(recetaSeleccionada?.unidades) || 1
-    const factorCantidad = cantidadNum / unidadesReceta
-    const costoRecetaAjustado = costoReceta * factorCantidad
-    const costoTotalProduccion = costoRecetaAjustado + costoInsumos
-
-    const agregarInsumo = () => {
-        if (!insumoForm.nombre || !insumoForm.cantidadUso) return
-        const item = inventario.find(i =>
-            i.nombre.toLowerCase().trim() === insumoForm.nombre.toLowerCase().trim()
-        )
-        let ins = { ...insumoForm, id: crypto.randomUUID() }
-        if (item) {
-            ins = {
-                ...ins,
-                cantidadPaquete: item.tamañoPaquete || "",
-                unidadPaquete: item.unidad || "unidad",
-                precioPaquete: item.costoPorPaquete || ""
-            }
-        }
-        ins.costoParcial = calcularCostoParcial(ins).toFixed(1)
-        setForm(prev => ({ ...prev, insumos: [...prev.insumos, ins] }))
-        setInsumoForm(INSUMO_FORM_INICIAL)
-    }
-
-    const eliminarInsumo = (id) =>
-        setForm(prev => ({ ...prev, insumos: prev.insumos.filter(i => i.id !== id) }))
-
-    const guardar = async () => {
-        if (!form.recetaId || !form.cantidad) return
-        const receta = recetas.find(r => r._id === form.recetaId)
-        if (!receta) return
-
-        const cantidad = parseInt(form.cantidad) || 0
-
-        const nuevo = await apiProduccion.crear({
-            fecha: form.fecha,
-            recetaId: form.recetaId,
-            recetaNombre: receta.nombre,
-            cantidad,
-            tipo: form.tipo,
-            notas: form.notas || "",
-            insumos: form.insumos || [],
-            costoReceta: costoRecetaAjustado,
-            costoInsumos,
-            costoTotal: costoTotalProduccion,
-        })
-        setProduccion(prev => [nuevo, ...prev])
-
-        // ── FIX: actualizar inventario local sin recargar ──
-        if (form.tipo === "produccion" && inventario.length > 0) {
-            const factor = cantidad / (parseInt(receta.unidades) || 1)
-            const ingredientes = receta.ingredientes || []
-            const insumos = form.insumos || []
-
-            // Calcular nuevas cantidades
-            const cambios = {}
-            inventario.forEach(item => {
-                const usadoIng = ingredientes.find(i =>
-                    i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
-                )
-                const usadoIns = insumos.find(i =>
-                    i.nombre.toLowerCase().trim() === item.nombre.toLowerCase().trim()
-                )
-                if (!usadoIng && !usadoIns) return
-
-                let consumo = 0
-                if (usadoIng) consumo += (parseFloat(usadoIng.cantidadUso) || 0) * factor
-                if (usadoIns) consumo += parseFloat(usadoIns.cantidadUso) || 0
-
-                const nuevaCantidad = parseFloat(
-                    Math.max(0, (parseFloat(item.cantidad) || 0) - consumo).toFixed(2)
-                )
-                cambios[item._id] = nuevaCantidad
-            })
-
-            // Enviar actualizaciones a la API
-            await Promise.all(
-                Object.entries(cambios).map(([id, nuevaCantidad]) =>
-                    apiInventario.actualizar({ id, cantidad: nuevaCantidad, cantidadBase: nuevaCantidad })
-                )
-            )
-
-            // Actualizar inventario local sin recargar toda la página
-            setInventario(prev => prev.map(item =>
-                cambios[item._id] !== undefined
-                    ? { ...item, cantidad: cambios[item._id], cantidadBase: cambios[item._id] }
-                    : item
-            ))
-        }
-
-        setForm(FORM_INICIAL)
-        setInsumoForm(INSUMO_FORM_INICIAL)
-    }
-
-    const eliminar = async (id) => {
-        await apiProduccion.eliminar(id)
-        setProduccion(prev => prev.filter(p => p._id !== id))
-    }
-
-    const historial = produccion
-        .slice()
-        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-        .reduce((grupos, item) => {
-            const fecha = item.fecha.split("T")[0]
-            if (!grupos[fecha]) grupos[fecha] = []
-            grupos[fecha].push(item)
-            return grupos
-        }, {})
-
-    return {
+export default function Produccion() {
+    const {
         form, setForm,
         insumoForm, setInsumoForm,
-        produccion,
         recetas,
         inventario,
         cargando,
@@ -227,5 +22,62 @@ export function useProduccion() {
         eliminar,
         agregarInsumo,
         eliminarInsumo,
-    }
+    } = useProduccion()
+
+    if (cargando) return (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--texto-suave)" }}>
+            ⏳ Cargando producción...
+        </div>
+    )
+
+    if (recetas.length === 0) return (
+        <div>
+            <h2 className="page-titulo">🏭 Producción</h2>
+            <div className="card" style={{ textAlign: "center", color: "var(--texto-suave)", padding: "40px 20px" }}>
+                <p style={{ fontSize: 40 }}>🏭</p>
+                <p>Primero creá recetas para poder registrar producción.</p>
+            </div>
+        </div>
+    )
+
+    return (
+        <div>
+            <h2 className="page-titulo">🏭 Producción</h2>
+
+            <StockDisponible stockPorReceta={stockPorReceta} />
+
+            <FormularioProduccion
+                form={form}
+                setForm={setForm}
+                recetas={recetas}
+                insumoForm={insumoForm}
+                setInsumoForm={setInsumoForm}
+                inventario={inventario}
+                recetaSeleccionada={recetaSeleccionada}
+                previewDescuento={previewDescuento}
+                hayStockInsuficiente={hayStockInsuficiente}
+                costoInsumos={costoInsumos}
+                costoRecetaAjustado={costoRecetaAjustado}
+                costoTotalProduccion={costoTotalProduccion}
+                onGuardar={guardar}
+                onAgregarInsumo={agregarInsumo}
+                onEliminarInsumo={eliminarInsumo}
+            />
+
+            <HistorialProduccion
+                historial={historial}
+                onEliminar={eliminar}
+            />
+
+            {Object.keys(historial).length === 0 && (
+                <div className="card" style={{ textAlign: "center", color: "var(--texto-suave)", padding: "40px 20px" }}>
+                    <p style={{ fontSize: 40 }}>🍩</p>
+                    <p>Registrá lo que producís cada día.</p>
+                    <p style={{ fontSize: 13, marginTop: 4 }}>
+                        Al registrar producción se descuentan los ingredientes del inventario y podés agregar los insumos de empaque.
+                    </p>
+                </div>
+            )}
+        </div>
+    )
 }
